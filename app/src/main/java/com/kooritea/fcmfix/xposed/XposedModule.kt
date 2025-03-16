@@ -1,311 +1,336 @@
-package com.kooritea.fcmfix.xposed;
+package com.kooritea.fcmfix.xposed
 
-import android.annotation.SuppressLint;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.UserManager;
-import android.util.Log;
+import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
+import android.os.UserManager
+import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import com.kooritea.fcmfix.util.ContentProviderHelper
+import de.robv.android.xposed.XC_MethodHook
+import de.robv.android.xposed.XSharedPreferences
+import de.robv.android.xposed.XposedBridge
+import de.robv.android.xposed.XposedHelpers
+import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
-
-import com.kooritea.fcmfix.util.ContentProviderHelper;
-import java.util.ArrayList;
-import java.util.Set;
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XSharedPreferences;
-import de.robv.android.xposed.XposedBridge;
-import de.robv.android.xposed.XposedHelpers;
-import de.robv.android.xposed.callbacks.XC_LoadPackage;
-import static android.content.Context.NOTIFICATION_SERVICE;
-
-public abstract class XposedModule {
-    static public XC_LoadPackage.LoadPackageParam staticLoadPackageParam = null;
-
-    protected XC_LoadPackage.LoadPackageParam loadPackageParam;
-    public static Set<String> allowList = null;
-
-    static final String TAG = "FcmFix";
-    private static Boolean disableAutoCleanNotification = null;
-    private static Boolean includeIceBoxDisableApp = null;
-
-    @SuppressLint("StaticFieldLeak")
-    protected static Context context = null;
-    private static final ArrayList<XposedModule> instances = new ArrayList<>();
-    private static Boolean isInitReceiver = false;
-    private static Thread loadConfigThread = null;
-
-    protected XposedModule(final XC_LoadPackage.LoadPackageParam loadPackageParam) {
-        this.loadPackageParam = loadPackageParam;
-        instances.add(this);
-        if(instances.size() == 1){
-            initContext(loadPackageParam);
-        }else{
-            if(context != null && context.getSystemService(UserManager.class).isUserUnlocked()){
-                try{
-                    onCanReadConfig();
-                }catch (Exception e){
-                    printLog(e.getMessage());
-                }
-            }
-        }
-
-    }
-
-    private static void initContext(final XC_LoadPackage.LoadPackageParam loadPackageParam){
-        XposedHelpers.findAndHookMethod("android.content.ContextWrapper", loadPackageParam.classLoader,"attachBaseContext", Context.class, new XC_MethodHook() {
-            @Override
-            protected void afterHookedMethod(MethodHookParam methodHookParam) {
-                if(context == null){
-                    context = (Context)methodHookParam.thisObject;
-                    if (context.getSystemService(UserManager.class).isUserUnlocked()) {
-                        callAllOnCanReadConfig();
-                    }else{
-                        IntentFilter userUnlockIntentFilter = new IntentFilter();
-                        userUnlockIntentFilter.addAction(Intent.ACTION_USER_UNLOCKED);
-                        context.registerReceiver(unlockBroadcastReceive, userUnlockIntentFilter);
-                    }
-                }
-            }
-        });
-    }
-
-    /**
-     * 每个被hook的APP第一次获取到context时调用
-     */
-    private static void callAllOnCanReadConfig(){
-        initReceiver();
-        for(XposedModule instance : instances){
-            try{
-                instance.onCanReadConfig();
-            }catch (Exception e){
-                printLog(e.getMessage());
-            }
-        }
-    }
-
-    protected void onCanReadConfig() throws Exception{}
-
-    protected static void printLog(String text){
-        printLog(text, false);
-    }
-
-    protected static void printLog(String text, Boolean isDiagnosticsLog) {
-        Log.d(TAG, text);
-        if (isDiagnosticsLog) {
-            Intent log = new Intent("com.kooritea.fcmfix.log");
-            log.putExtra("text", "["+getSelfPackageName()+"]"+text);
-
-            try {
-                context.sendBroadcast(log);
-            } catch (Exception e) {
-                XposedBridge.log("[fcmfix] ["+getSelfPackageName()+"]"+text);
-            }
-        } else {
-            XposedBridge.log("[fcmfix] ["+getSelfPackageName()+"]"+text);
-        }
+abstract class XposedModule protected constructor(@JvmField protected var loadPackageParam: LoadPackageParam) {
+    @Throws(Exception::class)
+    protected open fun onCanReadConfig() {
     }
 
     /**
      * 尝试读取允许的应用列表但列表未初始化时调用
      */
-    protected void checkUserDeviceUnlockAndUpdateConfig(){
-        if (context != null && context.getSystemService(UserManager.class).isUserUnlocked()) {
+    private fun checkUserDeviceUnlockAndUpdateConfig() {
+        if (context != null && context!!.getSystemService(
+                UserManager::class.java
+            ).isUserUnlocked
+        ) {
             try {
-                onUpdateConfig();
-            } catch (Exception e) {
-                printLog("更新配置文件失败: " + e.getMessage());
+                onUpdateConfig()
+            } catch (e: Exception) {
+                printLog("更新配置文件失败: " + e.message)
             }
         }
     }
 
-    private static final BroadcastReceiver unlockBroadcastReceive = new BroadcastReceiver() {
-        public void onReceive(Context _context, Intent intent) {
-            String action = intent.getAction();
-            if (Intent.ACTION_USER_UNLOCKED.equals(action)) {
+    init {
+        instances.add(this)
+        if (instances.size == 1) {
+            initContext(loadPackageParam)
+        } else {
+            if (context != null && context!!.getSystemService(
+                    UserManager::class.java
+                ).isUserUnlocked
+            ) {
                 try {
-                    context.unregisterReceiver(unlockBroadcastReceive);
-                } catch (Exception ignored) { }
-                callAllOnCanReadConfig();
+                    onCanReadConfig()
+                } catch (e: Exception) {
+                    printLog(e.message!!)
+                }
             }
         }
-    };
-
-    protected boolean targetIsAllow(String packageName){
-        if(disableAutoCleanNotification == null){
-            this.checkUserDeviceUnlockAndUpdateConfig();
-        }
-        if("com.kooritea.fcmfix".equals(packageName)){
-            return true;
-        }
-        if(allowList != null){
-            return allowList.contains(packageName);
-        }
-        return false;
     }
 
-    protected boolean isDisableAutoCleanNotification(){
-        if(disableAutoCleanNotification == null){
-            this.checkUserDeviceUnlockAndUpdateConfig();
+    protected fun targetIsAllow(packageName: String): Boolean {
+        if (disableAutoCleanNotification == null) {
+            this.checkUserDeviceUnlockAndUpdateConfig()
         }
-        return disableAutoCleanNotification != null && disableAutoCleanNotification;
+        if ("com.kooritea.fcmfix" == packageName) {
+            return true
+        }
+        if (allowList != null) {
+            return allowList!!.contains(packageName)
+        }
+        return false
     }
 
-    protected boolean isIncludeIceBoxDisableApp(){
-        if(includeIceBoxDisableApp == null){
-            this.checkUserDeviceUnlockAndUpdateConfig();
-        }
-        return includeIceBoxDisableApp != null && includeIceBoxDisableApp;
-    }
-
-    protected static void onUpdateConfig(){
-        if(loadConfigThread == null){
-            loadConfigThread = new Thread(){
-                @Override
-                public void run() {
-                    super.run();
-                    try{
-                        XSharedPreferences pref = new XSharedPreferences("com.kooritea.fcmfix", "config");
-                        if(pref.getFile().canRead() && pref.getBoolean("init", false)){
-                            allowList = pref.getStringSet("allowList", null);
-                            if(allowList != null && "android".equals(getSelfPackageName())){
-                                printLog( "[XSharedPreferences Mode]onUpdateConfig allowList size: " + allowList.size());
-                            }
-                            disableAutoCleanNotification = pref.getBoolean("disableAutoCleanNotification", false);
-                            includeIceBoxDisableApp = pref.getBoolean("includeIceBoxDisableApp", false);
-                            loadConfigThread = null;
-                            return;
-                        }
-                    }catch (Exception e){
-                        printLog("直接读取应用配置失败，将唤醒fcmfix本体进行读取: " + e.getMessage());
-                    }
-                    try{
-                        ContentProviderHelper contentProviderHelper = new ContentProviderHelper(context,"content://com.kooritea.fcmfix.provider/config");
-                        allowList = contentProviderHelper.getStringSet("allowList");
-                        if(allowList != null && "android".equals(getSelfPackageName())){
-                            printLog( "[ContentProvider Mode]onUpdateConfig allowList size: " + allowList.size());
-                        }
-                        disableAutoCleanNotification = contentProviderHelper.getBoolean("disableAutoCleanNotification", false);
-                        includeIceBoxDisableApp = contentProviderHelper.getBoolean("includeIceBoxDisableApp", false);
-                        contentProviderHelper.close();
-                    }catch (Exception e){
-                        printLog("唤醒fcmfix应用读取配置失败: " + e.getMessage());
-                    }
-                    loadConfigThread = null;
-                }
-            };
-            loadConfigThread.start();
-        }
-    }
-
-    private static void onUninstallFcmfix(){
-        NotificationManager notificationManager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
-        NotificationChannel channel = notificationManager.getNotificationChannel("fcmfix");
-        if(channel != null){
-            notificationManager.deleteNotificationChannel(channel.getId());
-        }
-    }
-
-    private static synchronized void initReceiver(){
-        if(!isInitReceiver && context != null){
-            isInitReceiver = true;
-
-            IntentFilter updateConfigIntentFilter = new IntentFilter();
-            updateConfigIntentFilter.addAction("com.kooritea.fcmfix.update.config");
-            if (Build.VERSION.SDK_INT >= 34) {
-                context.registerReceiver(new BroadcastReceiver() {
-                    public void onReceive(Context context, Intent intent) {
-                        String action = intent.getAction();
-                        if ("com.kooritea.fcmfix.update.config".equals(action)) {
-                            onUpdateConfig();
-                        }
-                    }
-                }, updateConfigIntentFilter, Context.RECEIVER_EXPORTED);
-            } else {
-                context.registerReceiver(new BroadcastReceiver() {
-                    public void onReceive(Context context, Intent intent) {
-                        String action = intent.getAction();
-                        if ("com.kooritea.fcmfix.update.config".equals(action)) {
-                            onUpdateConfig();
-                        }
-                    }
-                }, updateConfigIntentFilter);
+    protected val isDisableAutoCleanNotification: Boolean
+        get() {
+            if (disableAutoCleanNotification == null) {
+                this.checkUserDeviceUnlockAndUpdateConfig()
             }
-
-            IntentFilter unInstallIntentFilter = new IntentFilter();
-            unInstallIntentFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
-            unInstallIntentFilter.addDataScheme("package");
-            context.registerReceiver(new BroadcastReceiver() {
-                public void onReceive(Context context, Intent intent) {
-                    String action = intent.getAction();
-                    if(Intent.ACTION_PACKAGE_REMOVED.equals(action) && "com.kooritea.fcmfix".equals(intent.getData().getSchemeSpecificPart())){
-                        Bundle extras = intent.getExtras();
-                        if(extras.containsKey(Intent.EXTRA_REPLACING) && extras.getBoolean(Intent.EXTRA_REPLACING)){
-                            return;
-                        }
-                        onUninstallFcmfix();
-                        if("android".equals(getSelfPackageName())){
-                            printLog("Fcmfix已卸载，重启后停止生效。");
-                        }
-                    }
-                }
-            }, unInstallIntentFilter);
+            return disableAutoCleanNotification != null && disableAutoCleanNotification!!
         }
 
+    protected val isIncludeIceBoxDisableApp: Boolean
+        get() {
+            if (includeIceBoxDisableApp == null) {
+                this.checkUserDeviceUnlockAndUpdateConfig()
+            }
+            return includeIceBoxDisableApp != null && includeIceBoxDisableApp!!
+        }
+
+    protected fun sendNotification(title: String) {
+        sendNotification(title, null, null)
     }
 
-    protected void sendNotification(String title) {
-        sendNotification(title,null,null);
-    }
-
-    protected void sendNotification(String title, String content) {
-        sendNotification(title,content,null);
+    protected fun sendNotification(title: String, content: String?) {
+        sendNotification(title, content, null)
     }
 
     @SuppressLint("MissingPermission")
-    protected void sendNotification(String title, String content, PendingIntent pendingIntent ) {
-        printLog(title, false);
-        title = "[fcmfix]" + title;
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-        this.createFcmfixChannel(notificationManager);
-        NotificationCompat.Builder notification = new NotificationCompat.Builder(context, "fcmfix")
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle(title)
-                .setContentText(content)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-        if(pendingIntent != null){
-            notification.setContentIntent(pendingIntent).setAutoCancel(true);
+    protected fun sendNotification(title: String, content: String?, pendingIntent: PendingIntent?) {
+        var mtitle = title
+        printLog(mtitle, false)
+        mtitle = "[fcmfix]$mtitle"
+        val notificationManager = NotificationManagerCompat.from(
+            context!!
+        )
+        this.createFcmfixChannel(notificationManager)
+        val notification = NotificationCompat.Builder(context!!, "fcmfix")
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(mtitle)
+            .setContentText(content)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        if (pendingIntent != null) {
+            notification.setContentIntent(pendingIntent).setAutoCancel(true)
         }
-        notificationManager.notify((int) System.currentTimeMillis(), notification.build());
+        notificationManager.notify(System.currentTimeMillis().toInt(), notification.build())
     }
 
-    protected void createFcmfixChannel(NotificationManagerCompat notificationManager) {
-        if(notificationManager.getNotificationChannel("fcmfix") == null){
-            NotificationChannel channel = new NotificationChannel("fcmfix", "fcmfix", NotificationManager.IMPORTANCE_HIGH);
-            channel.setDescription("[xposed] fcmfix");
-            notificationManager.createNotificationChannel(channel);
+    private fun createFcmfixChannel(notificationManager: NotificationManagerCompat) {
+        if (notificationManager.getNotificationChannel("fcmfix") == null) {
+            val channel =
+                NotificationChannel("fcmfix", "fcmfix", NotificationManager.IMPORTANCE_HIGH)
+            channel.description = "[xposed] fcmfix"
+            notificationManager.createNotificationChannel(channel)
         }
     }
 
-    protected boolean isFCMIntent(Intent intent) {
-        String action = intent.getAction();
-        if (action != null && (action.endsWith(".android.c2dm.intent.RECEIVE") ||
-                               "com.google.firebase.MESSAGING_EVENT".equals(action) ||
-                               "com.google.firebase.INSTANCE_ID_EVENT".equals(action))) {
-            return true;
+    protected fun isFCMIntent(intent: Intent): Boolean {
+        val action = intent.action
+        return if (action != null && (action.endsWith(".android.c2dm.intent.RECEIVE") ||
+                    "com.google.firebase.MESSAGING_EVENT" == action ||
+                    "com.google.firebase.INSTANCE_ID_EVENT" == action)
+        ) {
+            true
         } else {
-            return false;
+            false
         }
     }
 
-     protected static String getSelfPackageName() {
-        return staticLoadPackageParam == null ? "UNKNOWN":staticLoadPackageParam.packageName;
+    companion object {
+        var staticLoadPackageParam: LoadPackageParam? = null
+
+        var allowList: Set<String>? = null
+
+        const val TAG: String = "FcmFix"
+        private var disableAutoCleanNotification: Boolean? = null
+        private var includeIceBoxDisableApp: Boolean? = null
+
+        @JvmStatic
+        @SuppressLint("StaticFieldLeak")
+        protected var context: Context? = null
+        private val instances = ArrayList<XposedModule>()
+        private var isInitReceiver = false
+        private var loadConfigThread: Thread? = null
+
+        private fun initContext(loadPackageParam: LoadPackageParam) {
+            XposedHelpers.findAndHookMethod(
+                "android.content.ContextWrapper", loadPackageParam.classLoader, "attachBaseContext",
+                Context::class.java, object : XC_MethodHook() {
+                    override fun afterHookedMethod(methodHookParam: MethodHookParam) {
+                        if (context == null) {
+                            context = methodHookParam.thisObject as Context
+                            if (context!!.getSystemService(UserManager::class.java).isUserUnlocked) {
+                                callAllOnCanReadConfig()
+                            } else {
+                                val userUnlockIntentFilter = IntentFilter()
+                                userUnlockIntentFilter.addAction(Intent.ACTION_USER_UNLOCKED)
+                                context!!.registerReceiver(
+                                    unlockBroadcastReceive,
+                                    userUnlockIntentFilter
+                                )
+                            }
+                        }
+                    }
+                })
+        }
+
+        /**
+         * 每个被hook的APP第一次获取到context时调用
+         */
+        private fun callAllOnCanReadConfig() {
+            initReceiver()
+            for (instance in instances) {
+                try {
+                    instance.onCanReadConfig()
+                } catch (e: Exception) {
+                    printLog(e.message!!)
+                }
+            }
+        }
+
+        @JvmStatic
+        protected fun printLog(text: String, isDiagnosticsLog: Boolean = false) {
+            Log.d(TAG, text)
+            if (isDiagnosticsLog) {
+                val log = Intent("com.kooritea.fcmfix.log")
+                log.putExtra("text", "[$selfPackageName]$text")
+
+                try {
+                    context!!.sendBroadcast(log)
+                } catch (e: Exception) {
+                    XposedBridge.log("[fcmfix] [$selfPackageName]$text")
+                }
+            } else {
+                XposedBridge.log("[fcmfix] [$selfPackageName]$text")
+            }
+        }
+
+        private val unlockBroadcastReceive: BroadcastReceiver = object : BroadcastReceiver() {
+            override fun onReceive(_context: Context, intent: Intent) {
+                val action = intent.action
+                if (Intent.ACTION_USER_UNLOCKED == action) {
+                    try {
+                        context!!.unregisterReceiver(this)
+                    } catch (ignored: Exception) {
+                    }
+                    callAllOnCanReadConfig()
+                }
+            }
+        }
+
+        @JvmStatic
+        protected fun onUpdateConfig() {
+            if (loadConfigThread == null) {
+                loadConfigThread = object : Thread() {
+                    override fun run() {
+                        super.run()
+                        try {
+                            val pref = XSharedPreferences("com.kooritea.fcmfix", "config")
+                            if (pref.file.canRead() && pref.getBoolean("init", false)) {
+                                allowList = pref.getStringSet("allowList", null)
+                                if (allowList != null && "android" == selfPackageName) {
+                                    printLog("[XSharedPreferences Mode]onUpdateConfig allowList size: " + allowList!!.size)
+                                }
+                                disableAutoCleanNotification =
+                                    pref.getBoolean("disableAutoCleanNotification", false)
+                                includeIceBoxDisableApp =
+                                    pref.getBoolean("includeIceBoxDisableApp", false)
+                                loadConfigThread = null
+                                return
+                            }
+                        } catch (e: Exception) {
+                            printLog("直接读取应用配置失败，将唤醒fcmfix本体进行读取: " + e.message)
+                        }
+                        try {
+                            val contentProviderHelper = ContentProviderHelper(
+                                context!!, "content://com.kooritea.fcmfix.provider/config"
+                            )
+                            allowList = contentProviderHelper.getStringSet("allowList")
+                            if (allowList != null && "android" == selfPackageName) {
+                                printLog("[ContentProvider Mode]onUpdateConfig allowList size: " + allowList!!.size)
+                            }
+                            disableAutoCleanNotification = contentProviderHelper.getBoolean(
+                                "disableAutoCleanNotification",
+                                false
+                            )
+                            includeIceBoxDisableApp =
+                                contentProviderHelper.getBoolean("includeIceBoxDisableApp", false)
+                            contentProviderHelper.close()
+                        } catch (e: Exception) {
+                            printLog("唤醒fcmfix应用读取配置失败: " + e.message)
+                        }
+                        loadConfigThread = null
+                    }
+                }
+                loadConfigThread?.start()
+            }
+        }
+
+        private fun onUninstallFcmfix() {
+            val notificationManager =
+                context!!.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channel = notificationManager.getNotificationChannel("fcmfix")
+            if (channel != null) {
+                notificationManager.deleteNotificationChannel(channel.id)
+            }
+        }
+
+        @SuppressLint("UnspecifiedRegisterReceiverFlag")
+        @Synchronized
+        private fun initReceiver() {
+            if (!isInitReceiver && context != null) {
+                isInitReceiver = true
+
+                val updateConfigIntentFilter = IntentFilter()
+                updateConfigIntentFilter.addAction("com.kooritea.fcmfix.update.config")
+                if (Build.VERSION.SDK_INT >= 34) {
+                    context!!.registerReceiver(object : BroadcastReceiver() {
+                        override fun onReceive(context: Context, intent: Intent) {
+                            val action = intent.action
+                            if ("com.kooritea.fcmfix.update.config" == action) {
+                                onUpdateConfig()
+                            }
+                        }
+                    }, updateConfigIntentFilter, Context.RECEIVER_EXPORTED)
+                } else {
+                    context!!.registerReceiver(object : BroadcastReceiver() {
+                        override fun onReceive(context: Context, intent: Intent) {
+                            val action = intent.action
+                            if ("com.kooritea.fcmfix.update.config" == action) {
+                                onUpdateConfig()
+                            }
+                        }
+                    }, updateConfigIntentFilter)
+                }
+
+                val unInstallIntentFilter = IntentFilter()
+                unInstallIntentFilter.addAction(Intent.ACTION_PACKAGE_REMOVED)
+                unInstallIntentFilter.addDataScheme("package")
+                context!!.registerReceiver(object : BroadcastReceiver() {
+                    override fun onReceive(context: Context, intent: Intent) {
+                        val action = intent.action
+                        if (Intent.ACTION_PACKAGE_REMOVED == action && "com.kooritea.fcmfix" == intent.data!!
+                                .schemeSpecificPart
+                        ) {
+                            val extras = intent.extras
+                            if (extras!!.containsKey(Intent.EXTRA_REPLACING) && extras.getBoolean(
+                                    Intent.EXTRA_REPLACING
+                                )
+                            ) {
+                                return
+                            }
+                            onUninstallFcmfix()
+                            if ("android" == selfPackageName) {
+                                printLog("Fcmfix已卸载，重启后停止生效。")
+                            }
+                        }
+                    }
+                }, unInstallIntentFilter)
+            }
+        }
+
+        protected val selfPackageName: String
+            get() = if (staticLoadPackageParam == null) "UNKNOWN" else staticLoadPackageParam!!.packageName
     }
 }

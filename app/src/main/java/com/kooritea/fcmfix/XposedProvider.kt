@@ -1,96 +1,96 @@
-package com.kooritea.fcmfix;
+package com.kooritea.fcmfix
 
-import android.content.ContentProvider;
-import android.content.ContentValues;
-import android.content.UriMatcher;
-import android.database.Cursor;
-import android.database.MatrixCursor;
-import android.net.Uri;
+import android.content.ContentProvider
+import android.content.ContentValues
+import android.content.UriMatcher
+import android.database.Cursor
+import android.database.MatrixCursor
+import android.net.Uri
+import org.json.JSONException
+import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.IOException
+import java.io.InputStreamReader
+import java.nio.charset.StandardCharsets
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-
-public class XposedProvider extends ContentProvider {
-
-    private static final UriMatcher uriMatcher;
-
-    static
-    {
-        uriMatcher=new UriMatcher(UriMatcher.NO_MATCH);
-        uriMatcher.addURI("com.kooritea.fcmfix.provider","config",0);
+class XposedProvider : ContentProvider() {
+    override fun onCreate(): Boolean {
+        return false
     }
 
-    @Override
-    public boolean onCreate() {
-        return false;
+    override fun getType(uri: Uri): String? {
+        return null
     }
 
-    @Nullable
-    @Override
-    public String getType(@NonNull Uri uri) {
-        return null;
-    }
-
-
-    @Nullable
-    @Override
-    public Cursor query(@NonNull Uri uri, @Nullable String[] projection, @Nullable String selection, @Nullable String[] selectionArgs, @Nullable String sortOrder) {
+    override fun query(
+        uri: Uri, projection: Array<String>?, selection: String?,
+        selectionArgs: Array<String>?, sortOrder: String?
+    ): Cursor {
         //这里填写查询逻辑
-        JSONObject config = new JSONObject();
+        var config = JSONObject()
         try {
-            FileInputStream fis = getContext().openFileInput("config.json");
-            InputStreamReader inputStreamReader = new InputStreamReader(fis, StandardCharsets.UTF_8);
-            StringBuilder stringBuilder = new StringBuilder();
-            BufferedReader reader = new BufferedReader(inputStreamReader);
-            String line = reader.readLine();
+            val fis = context!!.openFileInput("config.json")
+            val inputStreamReader = InputStreamReader(fis, StandardCharsets.UTF_8)
+            val stringBuilder = StringBuilder()
+            val reader = BufferedReader(inputStreamReader)
+            var line = reader.readLine()
             while (line != null) {
-                stringBuilder.append(line).append('\n');
-                line = reader.readLine();
+                stringBuilder.append(line).append('\n')
+                line = reader.readLine()
             }
-            config = new JSONObject(stringBuilder.toString());
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
+            config = JSONObject(stringBuilder.toString())
+        } catch (e: IOException) {
+            e.printStackTrace()
+        } catch (e: JSONException) {
+            e.printStackTrace()
         }
-        String[] COLUMN_NAME = { "key", "value" };
-        MatrixCursor data = new MatrixCursor(COLUMN_NAME);
-        try{
-            data.addRow(new Object[]{"disableAutoCleanNotification", config.isNull("disableAutoCleanNotification") ? "0" : (config.getBoolean("disableAutoCleanNotification") ? "1" : "0") });
-            JSONArray jsonAllowList = config.getJSONArray("allowList");
-            for(int i = 0; i < jsonAllowList.length(); i++){
-                data.addRow(new Object[]{"allowList",jsonAllowList.getString(i)});
+        val COLUMN_NAME = arrayOf("key", "value")
+        val data = MatrixCursor(COLUMN_NAME)
+        try {
+            data.addRow(
+                arrayOf<Any>(
+                    "disableAutoCleanNotification",
+                    if (config.isNull("disableAutoCleanNotification")) "0" else (if (config.getBoolean(
+                            "disableAutoCleanNotification"
+                        )
+                    ) "1" else "0")
+                )
+            )
+            val jsonAllowList = config.getJSONArray("allowList")
+            for (i in 0..<jsonAllowList.length()) {
+                data.addRow(arrayOf<Any>("allowList", jsonAllowList.getString(i)))
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
+        } catch (e: JSONException) {
+            e.printStackTrace()
         }
-        return data;
+        return data
     }
 
-    @Nullable
-    @Override
-    public Uri insert(@NonNull Uri uri, @Nullable ContentValues values) {
+    override fun insert(uri: Uri, values: ContentValues?): Uri? {
         //这里填写插入逻辑
-        return null;
+        return null
     }
 
-    @Override
-    public int update(@NonNull Uri uri, @Nullable ContentValues values, @Nullable String selection, @Nullable String[] selectionArgs) {
+    override fun update(
+        uri: Uri,
+        values: ContentValues?,
+        selection: String?,
+        selectionArgs: Array<String>?
+    ): Int {
         //这里填写更新逻辑
-        return 0;
+        return 0
     }
 
-    @Override
-    public int delete(@NonNull Uri uri, @Nullable String selection, @Nullable String[] selectionArgs) {
+    override fun delete(uri: Uri, selection: String?, selectionArgs: Array<String>?): Int {
         //这里填写删除逻辑
-        return 0;
+        return 0
+    }
+
+    companion object {
+        private val uriMatcher = UriMatcher(UriMatcher.NO_MATCH)
+
+        init {
+            uriMatcher.addURI("com.kooritea.fcmfix.provider", "config", 0)
+        }
     }
 }

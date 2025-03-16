@@ -1,79 +1,76 @@
-package com.kooritea.fcmfix.util;
+package com.kooritea.fcmfix.util
 
-import android.annotation.SuppressLint;
-import android.content.ContentResolver;
-import android.content.Context;
-import android.database.Cursor;
-import android.net.Uri;
-import java.util.HashSet;
-import java.util.Set;
+import android.annotation.SuppressLint
+import android.content.ContentResolver
+import android.content.Context
+import android.net.Uri
+import androidx.core.net.toUri
 
+class ContentProviderHelper(context: Context, uri: String) {
+    var contentResolver: ContentResolver = context.contentResolver
+    private val cursor = contentResolver.query(
+        uri.toUri(), null, "all", null, null
+    )
+    var useDefaultValue: Boolean = false
 
-public class ContentProviderHelper {
-
-    public ContentResolver contentResolver;
-    private final Cursor cursor;
-    public Boolean useDefaultValue = false;
-
-    public ContentProviderHelper(Context context, String uri){
-        contentResolver = context.getContentResolver();
-        this.cursor =contentResolver.query( Uri.parse(uri), null, "all", null,null);
+    @SuppressLint("Range")
+    fun getLong(selection: String, defaultValue: Long): Long {
+        if (useDefaultValue || cursor == null || cursor.count == 0) {
+            return defaultValue
+        }
+        cursor.moveToFirst()
+        do {
+            if (selection == cursor.getString(cursor.getColumnIndex("key"))) {
+                return cursor.getLong(cursor.getColumnIndex("value"))
+            }
+        } while (cursor.moveToNext())
+        return defaultValue
     }
 
     @SuppressLint("Range")
-    public Long getLong(String selection, Long defaultValue){
-        if(useDefaultValue || cursor == null || cursor.getCount() == 0){
-            return defaultValue;
+    fun getString(selection: String, defaultValue: String): String {
+        if (useDefaultValue || cursor == null || cursor.count == 0) {
+            return defaultValue
         }
-        cursor.moveToFirst();
-        do{
-            if(selection.equals(cursor.getString(cursor.getColumnIndex("key")))){
-                return cursor.getLong(cursor.getColumnIndex("value"));
+        cursor.moveToFirst()
+        do {
+            if (selection == cursor.getString(cursor.getColumnIndex("key"))) {
+                return cursor.getString(cursor.getColumnIndex("value"))
             }
-        }while (cursor.moveToNext());
-        return defaultValue;
+        } while (cursor.moveToNext())
+        return defaultValue
     }
+
     @SuppressLint("Range")
-    public String getString(String selection, String defaultValue){
-        if(useDefaultValue || cursor == null || cursor.getCount() == 0){
-            return defaultValue;
+    fun getBoolean(selection: String, defaultValue: Boolean): Boolean {
+        if (useDefaultValue || cursor == null || cursor.count == 0) {
+            return defaultValue
         }
-        cursor.moveToFirst();
-        do{
-            if(selection.equals(cursor.getString(cursor.getColumnIndex("key")))){
-                return cursor.getString(cursor.getColumnIndex("value"));
+        cursor.moveToFirst()
+        do {
+            if (selection == cursor.getString(cursor.getColumnIndex("key"))) {
+                return "1" == cursor.getString(cursor.getColumnIndex("value"))
             }
-        }while (cursor.moveToNext());
-        return defaultValue;
+        } while (cursor.moveToNext())
+        return defaultValue
     }
+
     @SuppressLint("Range")
-    public Boolean getBoolean(String selection, Boolean defaultValue){
-        if(useDefaultValue || cursor == null || cursor.getCount() == 0){
-            return defaultValue;
+    fun getStringSet(selection: String): Set<String> {
+        if (useDefaultValue || cursor == null || cursor.count == 0) {
+            return HashSet()
         }
-        cursor.moveToFirst();
-        do{
-            if(selection.equals(cursor.getString(cursor.getColumnIndex("key")))){
-                return "1".equals(cursor.getString(cursor.getColumnIndex("value")));
+        cursor.moveToFirst()
+        val result: MutableSet<String> = HashSet()
+        do {
+            if (selection == cursor.getString(cursor.getColumnIndex("key"))) {
+                result.add(cursor.getString(cursor.getColumnIndex("value")))
             }
-        }while (cursor.moveToNext());
-        return defaultValue;
+        } while (cursor.moveToNext())
+        return result
     }
-    @SuppressLint("Range")
-    public Set<String> getStringSet(String selection){
-        if(useDefaultValue || cursor == null || cursor.getCount() == 0){
-            return new HashSet<>();
-        }
-        cursor.moveToFirst();
-        Set<String> result = new HashSet<>();
-        do{
-            if(selection.equals(cursor.getString(cursor.getColumnIndex("key")))){
-                result.add(cursor.getString(cursor.getColumnIndex("value")));
-            }
-        }while (cursor.moveToNext());
-        return result;
-    }
-    public void close(){
-        this.cursor.close();
+
+    fun close() {
+        cursor!!.close()
     }
 }

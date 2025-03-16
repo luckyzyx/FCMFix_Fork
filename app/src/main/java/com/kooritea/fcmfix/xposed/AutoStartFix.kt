@@ -1,125 +1,185 @@
-package com.kooritea.fcmfix.xposed;
+package com.kooritea.fcmfix.xposed
 
-import android.content.Intent;
+import android.content.Intent
+import com.kooritea.fcmfix.util.XposedUtils.findAndHookMethodAnyParam
+import com.kooritea.fcmfix.util.XposedUtils.findMethod
+import com.kooritea.fcmfix.util.XposedUtils.getObjectFieldByPath
+import com.kooritea.fcmfix.util.XposedUtils.tryFindAndHookMethod
+import de.robv.android.xposed.XC_MethodHook
+import de.robv.android.xposed.XposedBridge
+import de.robv.android.xposed.XposedHelpers
+import de.robv.android.xposed.XposedHelpers.ClassNotFoundError
+import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 
-import com.kooritea.fcmfix.util.XposedUtils;
+class AutoStartFix(loadPackageParam: LoadPackageParam) : XposedModule(loadPackageParam) {
+    private val FCM_RECEIVE = ".android.c2dm.intent.RECEIVE"
 
-import java.lang.reflect.Method;
-
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedBridge;
-import de.robv.android.xposed.XposedHelpers;
-import de.robv.android.xposed.callbacks.XC_LoadPackage;
-
-public class AutoStartFix extends XposedModule {
-    private final String FCM_RECEIVE = ".android.c2dm.intent.RECEIVE";
-
-    public AutoStartFix(XC_LoadPackage.LoadPackageParam loadPackageParam){
-        super(loadPackageParam);
-        try{
-            this.startHook();
-            this.startHookRemovePowerPolicy();
-        }catch (Exception e) {
-            printLog("hook error AutoStartFix:" + e.getMessage());
+    init {
+        try {
+            this.startHook()
+            this.startHookRemovePowerPolicy()
+        } catch (e: Exception) {
+            printLog("hook error AutoStartFix:" + e.message)
         }
     }
 
-    protected void startHook(){
-        try{
+    protected fun startHook() {
+        try {
             // miui12
-            Class<?> BroadcastQueueInjector = XposedHelpers.findClass("com.android.server.am.BroadcastQueueInjector",loadPackageParam.classLoader);
-            XposedUtils.findAndHookMethodAnyParam(BroadcastQueueInjector,"checkApplicationAutoStart",new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam methodHookParam) {
-                    Intent intent = (Intent) XposedHelpers.getObjectField(methodHookParam.args[2], "intent");
-                    if(isFCMIntent(intent)){
-                        String target = intent.getComponent() == null ? intent.getPackage() : intent.getComponent().getPackageName();
-                        if(targetIsAllow(target)){
-                            XposedHelpers.callStaticMethod(BroadcastQueueInjector,"checkAbnormalBroadcastInQueueLocked", methodHookParam.args[1], methodHookParam.args[0]);
-                            printLog("Allow Auto Start: " + target, true);
-                            methodHookParam.setResult(true);
+            val BroadcastQueueInjector = XposedHelpers.findClass(
+                "com.android.server.am.BroadcastQueueInjector",
+                loadPackageParam.classLoader
+            )
+            findAndHookMethodAnyParam(
+                BroadcastQueueInjector,
+                "checkApplicationAutoStart",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(methodHookParam: MethodHookParam) {
+                        val intent = XposedHelpers.getObjectField(
+                            methodHookParam.args[2],
+                            "intent"
+                        ) as Intent
+                        if (isFCMIntent(intent)) {
+                            val target =
+                                if (intent.component == null) intent.getPackage() else intent.component!!
+                                    .packageName
+                            if (targetIsAllow(target!!)) {
+                                XposedHelpers.callStaticMethod(
+                                    BroadcastQueueInjector, "checkAbnormalBroadcastInQueueLocked",
+                                    methodHookParam.args[1], methodHookParam.args[0]
+                                )
+                                printLog("Allow Auto Start: $target", true)
+                                methodHookParam.result = true
+                            }
                         }
                     }
-                }
-            });
-        }catch (XposedHelpers.ClassNotFoundError | NoSuchMethodError  e){
-            printLog("No Such Method com.android.server.am.BroadcastQueueInjector.checkApplicationAutoStart");
+                })
+        } catch (e: ClassNotFoundError) {
+            printLog("No Such Method com.android.server.am.BroadcastQueueInjector.checkApplicationAutoStart")
+        } catch (e: NoSuchMethodError) {
+            printLog("No Such Method com.android.server.am.BroadcastQueueInjector.checkApplicationAutoStart")
         }
-        try{
+        try {
             // miui13
-            Class<?> BroadcastQueueImpl = XposedHelpers.findClass("com.android.server.am.BroadcastQueueImpl",loadPackageParam.classLoader);
-            XposedUtils.findAndHookMethodAnyParam(BroadcastQueueImpl,"checkApplicationAutoStart",new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam methodHookParam) {
-                    Intent intent = (Intent) XposedHelpers.getObjectField(methodHookParam.args[1], "intent");
-                    if(isFCMIntent(intent)){
-                        String target = intent.getComponent() == null ? intent.getPackage() : intent.getComponent().getPackageName();
-                        if(targetIsAllow(target)){
-                            XposedHelpers.callMethod(methodHookParam.thisObject, "checkAbnormalBroadcastInQueueLocked", methodHookParam.args[0]);
-                            printLog("Allow Auto Start: " + target, true);
-                            methodHookParam.setResult(true);
+            val BroadcastQueueImpl = XposedHelpers.findClass(
+                "com.android.server.am.BroadcastQueueImpl",
+                loadPackageParam.classLoader
+            )
+            findAndHookMethodAnyParam(
+                BroadcastQueueImpl,
+                "checkApplicationAutoStart",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(methodHookParam: MethodHookParam) {
+                        val intent = XposedHelpers.getObjectField(
+                            methodHookParam.args[1],
+                            "intent"
+                        ) as Intent
+                        if (isFCMIntent(intent)) {
+                            val target =
+                                if (intent.component == null) intent.getPackage() else intent.component!!
+                                    .packageName
+                            if (targetIsAllow(target!!)) {
+                                XposedHelpers.callMethod(
+                                    methodHookParam.thisObject,
+                                    "checkAbnormalBroadcastInQueueLocked",
+                                    methodHookParam.args[0]
+                                )
+                                printLog("Allow Auto Start: $target", true)
+                                methodHookParam.result = true
+                            }
                         }
                     }
-                }
-            });
-        }catch (XposedHelpers.ClassNotFoundError | NoSuchMethodError  e){
-            printLog("No Such Method com.android.server.am.BroadcastQueueImpl.checkApplicationAutoStart");
+                })
+        } catch (e: ClassNotFoundError) {
+            printLog("No Such Method com.android.server.am.BroadcastQueueImpl.checkApplicationAutoStart")
+        } catch (e: NoSuchMethodError) {
+            printLog("No Such Method com.android.server.am.BroadcastQueueImpl.checkApplicationAutoStart")
         }
 
-        try{
+        try {
             // hyperos
-            Class<?> BroadcastQueueImpl = XposedHelpers.findClass("com.android.server.am.BroadcastQueueModernStubImpl",loadPackageParam.classLoader);
-            printLog("[fcmfix] start hook com.android.server.am.BroadcastQueueModernStubImpl.checkApplicationAutoStart");
-            XposedUtils.findAndHookMethodAnyParam(BroadcastQueueImpl,"checkApplicationAutoStart", new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam methodHookParam) {
-                    Intent intent = (Intent) XposedHelpers.getObjectField(methodHookParam.args[1], "intent");
-                    String target = intent.getComponent() == null ? intent.getPackage() : intent.getComponent().getPackageName();
-                    if (targetIsAllow(target)) {
-                        // 无日志，先放了
-                        printLog("[" + intent.getAction() + "]checkApplicationAutoStart package_name: " + target, true);
-                        methodHookParam.setResult(true);
-//                        if(isFCMIntent(intent)){
+            val BroadcastQueueImpl = XposedHelpers.findClass(
+                "com.android.server.am.BroadcastQueueModernStubImpl",
+                loadPackageParam.classLoader
+            )
+            printLog("[fcmfix] start hook com.android.server.am.BroadcastQueueModernStubImpl.checkApplicationAutoStart")
+            findAndHookMethodAnyParam(
+                BroadcastQueueImpl,
+                "checkApplicationAutoStart",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(methodHookParam: MethodHookParam) {
+                        val intent = XposedHelpers.getObjectField(
+                            methodHookParam.args[1],
+                            "intent"
+                        ) as Intent
+                        val target =
+                            if (intent.component == null) intent.getPackage() else intent.component!!
+                                .packageName
+                        if (targetIsAllow(target!!)) {
+                            // 无日志，先放了
+                            printLog(
+                                "[" + intent.action + "]checkApplicationAutoStart package_name: " + target,
+                                true
+                            )
+                            methodHookParam.result = true
+
+                            //                        if(isFCMIntent(intent)){
 //                            printLog("checkApplicationAutoStart package_name: " + target, true);
 //                            methodHookParam.setResult(true);
 //                        }else{
 //                            printLog("[skip][" + intent.getAction() + "]checkApplicationAutoStart package_name: " + target, true);
 //                        }
-
-                    }
-                }
-            });
-
-            printLog("[fcmfix] start hook com.android.server.am.BroadcastQueueModernStubImpl.checkReceiverIfRestricted");
-            XposedUtils.findAndHookMethodAnyParam(BroadcastQueueImpl,"checkReceiverIfRestricted", new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam methodHookParam) {
-                    Intent intent = (Intent) XposedHelpers.getObjectField(methodHookParam.args[1], "intent");
-                    String target = intent.getComponent() == null ? intent.getPackage() : intent.getComponent().getPackageName();
-                    if(targetIsAllow(target)){
-                        if(isFCMIntent(intent)){
-                            printLog("BroadcastQueueModernStubImpl.checkReceiverIfRestricted package_name: " + target, true);
-                            methodHookParam.setResult(false);
                         }
                     }
-                }
-            });
-        }catch (XposedHelpers.ClassNotFoundError | NoSuchMethodError  e){
-            printLog("No Such class com.android.server.am.BroadcastQueueModernStubImpl");
+                })
+
+            printLog("[fcmfix] start hook com.android.server.am.BroadcastQueueModernStubImpl.checkReceiverIfRestricted")
+            findAndHookMethodAnyParam(
+                BroadcastQueueImpl,
+                "checkReceiverIfRestricted",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(methodHookParam: MethodHookParam) {
+                        val intent = XposedHelpers.getObjectField(
+                            methodHookParam.args[1],
+                            "intent"
+                        ) as Intent
+                        val target =
+                            if (intent.component == null) intent.getPackage() else intent.component!!
+                                .packageName
+                        if (targetIsAllow(target!!)) {
+                            if (isFCMIntent(intent)) {
+                                printLog(
+                                    "BroadcastQueueModernStubImpl.checkReceiverIfRestricted package_name: $target",
+                                    true
+                                )
+                                methodHookParam.result = false
+                            }
+                        }
+                    }
+                })
+        } catch (e: ClassNotFoundError) {
+            printLog("No Such class com.android.server.am.BroadcastQueueModernStubImpl")
+        } catch (e: NoSuchMethodError) {
+            printLog("No Such class com.android.server.am.BroadcastQueueModernStubImpl")
         }
 
         try {
-            Class<?> AutoStartManagerServiceStubImpl = XposedHelpers.findClass("com.android.server.am.AutoStartManagerServiceStubImpl", loadPackageParam.classLoader);
-            XC_MethodHook methodHook = new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam methodHookParam) {
-                    Intent intent = (Intent) methodHookParam.args[1];
-                    String target = intent.getComponent().getPackageName();
-                    if(targetIsAllow(target)) {
+            val AutoStartManagerServiceStubImpl = XposedHelpers.findClass(
+                "com.android.server.am.AutoStartManagerServiceStubImpl",
+                loadPackageParam.classLoader
+            )
+            val methodHook: XC_MethodHook = object : XC_MethodHook() {
+                override fun beforeHookedMethod(methodHookParam: MethodHookParam) {
+                    val intent = methodHookParam.args[1] as Intent
+                    val target = intent.component!!.packageName
+                    if (targetIsAllow(target)) {
                         // 拿不到action，先放了
-                        printLog("[" + intent.getAction() + "]AutoStartManagerServiceStubImpl.isAllowStartService package_name: " + target, true);
-                        methodHookParam.setResult(true);
-//                        if(isFCMIntent(intent)){
+                        printLog(
+                            "[" + intent.action + "]AutoStartManagerServiceStubImpl.isAllowStartService package_name: " + target,
+                            true
+                        )
+                        methodHookParam.result = true
+                        //                        if(isFCMIntent(intent)){
 //                            printLog("AutoStartManagerServiceStubImpl.isAllowStartService package_name: " + target, true);
 //                            methodHookParam.setResult(true);
 //                        }else{
@@ -127,95 +187,154 @@ public class AutoStartFix extends XposedModule {
 //                        }
                     }
                 }
-            };
-
-            printLog("[fcmfix] start hook com.android.server.am.AutoStartManagerServiceStubImpl.isAllowStartService");
-            XC_MethodHook.Unhook unhook1 = XposedUtils.tryFindAndHookMethod(AutoStartManagerServiceStubImpl, "isAllowStartService", 3, methodHook);
-            XC_MethodHook.Unhook unhook2 = XposedUtils.tryFindAndHookMethod(AutoStartManagerServiceStubImpl, "isAllowStartService", 4, methodHook);
-            if(unhook1 == null && unhook2 == null){
-                throw new NoSuchMethodError();
             }
-        } catch (XposedHelpers.ClassNotFoundError | NoSuchMethodError  e){
-            printLog("No Such Class com.android.server.am.AutoStartManagerServiceStubImpl.isAllowStartService");
+
+            printLog("[fcmfix] start hook com.android.server.am.AutoStartManagerServiceStubImpl.isAllowStartService")
+            val unhook1 = tryFindAndHookMethod(
+                AutoStartManagerServiceStubImpl,
+                "isAllowStartService",
+                3,
+                methodHook
+            )
+            val unhook2 = tryFindAndHookMethod(
+                AutoStartManagerServiceStubImpl,
+                "isAllowStartService",
+                4,
+                methodHook
+            )
+            if (unhook1 == null && unhook2 == null) {
+                throw NoSuchMethodError()
+            }
+        } catch (e: ClassNotFoundError) {
+            printLog("No Such Class com.android.server.am.AutoStartManagerServiceStubImpl.isAllowStartService")
+        } catch (e: NoSuchMethodError) {
+            printLog("No Such Class com.android.server.am.AutoStartManagerServiceStubImpl.isAllowStartService")
         }
 
         try {
-            Class<?> SmartPowerService = XposedHelpers.findClass("com.android.server.am.SmartPowerService", loadPackageParam.classLoader);
+            val SmartPowerService = XposedHelpers.findClass(
+                "com.android.server.am.SmartPowerService",
+                loadPackageParam.classLoader
+            )
 
-            printLog("[fcmfix] start hook com.android.server.am.SmartPowerService.shouldInterceptBroadcast");
-            XposedUtils.findAndHookMethodAnyParam(SmartPowerService, "shouldInterceptBroadcast", new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam methodHookParam) {
-                    Intent intent = (Intent) XposedHelpers.getObjectField(methodHookParam.args[1], "intent");
-                    String target = intent.getComponent() == null ? intent.getPackage() : intent.getComponent().getPackageName();
-                    if(targetIsAllow(target)) {
-                        if(isFCMIntent(intent)){
-                            printLog("SmartPowerService.shouldInterceptBroadcast package_name: " + target, true);
-                            methodHookParam.setResult(false);
+            printLog("[fcmfix] start hook com.android.server.am.SmartPowerService.shouldInterceptBroadcast")
+            findAndHookMethodAnyParam(
+                SmartPowerService,
+                "shouldInterceptBroadcast",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(methodHookParam: MethodHookParam) {
+                        val intent = XposedHelpers.getObjectField(
+                            methodHookParam.args[1],
+                            "intent"
+                        ) as Intent
+                        val target =
+                            if (intent.component == null) intent.getPackage() else intent.component!!
+                                .packageName
+                        if (targetIsAllow(target!!)) {
+                            if (isFCMIntent(intent)) {
+                                printLog(
+                                    "SmartPowerService.shouldInterceptBroadcast package_name: $target",
+                                    true
+                                )
+                                methodHookParam.result = false
+                            }
                         }
                     }
-                }
-            });
-        } catch (XposedHelpers.ClassNotFoundError | NoSuchMethodError  e){
-            printLog("No Such Class com.android.server.am.SmartPowerService");
+                })
+        } catch (e: ClassNotFoundError) {
+            printLog("No Such Class com.android.server.am.SmartPowerService")
+        } catch (e: NoSuchMethodError) {
+            printLog("No Such Class com.android.server.am.SmartPowerService")
         }
 
-        try{
+        try {
             // oos15/cos15
-            Method method = XposedUtils.findMethod(XposedHelpers.findClass("com.android.server.am.OplusAppStartupManager",loadPackageParam.classLoader),"isAllowStartFromBroadCast",4);
-            XposedBridge.hookMethod(method,new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam methodHookParam) {
-                    Intent intent = (Intent)methodHookParam.args[2];
-                    String packageName = (String) XposedUtils.getObjectFieldByPath(methodHookParam.args[3],"activityInfo.applicationInfo.packageName");
-                    if(isFCMIntent(intent) && targetIsAllow(packageName)){
-                        printLog("com.android.server.am.OplusAppStartupManager.isAllowStartFromBroadCast(4) package_name: " + packageName, true);
-                        methodHookParam.setResult(true);
+            val method = findMethod(
+                XposedHelpers.findClass(
+                    "com.android.server.am.OplusAppStartupManager",
+                    loadPackageParam.classLoader
+                ), "isAllowStartFromBroadCast", 4
+            )
+            XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                override fun afterHookedMethod(methodHookParam: MethodHookParam) {
+                    val intent = methodHookParam.args[2] as Intent
+                    val packageName = getObjectFieldByPath(
+                        methodHookParam.args[3],
+                        "activityInfo.applicationInfo.packageName"
+                    ) as String
+                    if (isFCMIntent(intent) && targetIsAllow(packageName)) {
+                        printLog(
+                            "com.android.server.am.OplusAppStartupManager.isAllowStartFromBroadCast(4) package_name: $packageName",
+                            true
+                        )
+                        methodHookParam.result = true
                     }
                 }
-            });
-        } catch (XposedHelpers.ClassNotFoundError | NoSuchMethodError  e) {
-            printLog("No Such Method com.android.server.am.OplusAppStartupManager.isAllowStartFromBroadCast(4)");
+            })
+        } catch (e: ClassNotFoundError) {
+            printLog("No Such Method com.android.server.am.OplusAppStartupManager.isAllowStartFromBroadCast(4)")
+        } catch (e: NoSuchMethodError) {
+            printLog("No Such Method com.android.server.am.OplusAppStartupManager.isAllowStartFromBroadCast(4)")
         }
-        try{
+        try {
             // oos15/cos15
-            Method method = XposedUtils.findMethod(XposedHelpers.findClass("com.android.server.am.OplusAppStartupManager",loadPackageParam.classLoader),"isAllowStartFromBroadCast",5);
-            XposedBridge.hookMethod(method,new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam methodHookParam) {
-                    Intent intent = (Intent)methodHookParam.args[3];
-                    String packageName = (String) XposedUtils.getObjectFieldByPath(methodHookParam.args[4],"activityInfo.applicationInfo.packageName");
-                    if(isFCMIntent(intent) && targetIsAllow(packageName)){
-                        printLog("com.android.server.am.OplusAppStartupManager.isAllowStartFromBroadCast(5) package_name: " + packageName, true);
-                        methodHookParam.setResult(true);
+            val method = findMethod(
+                XposedHelpers.findClass(
+                    "com.android.server.am.OplusAppStartupManager",
+                    loadPackageParam.classLoader
+                ), "isAllowStartFromBroadCast", 5
+            )
+            XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                override fun afterHookedMethod(methodHookParam: MethodHookParam) {
+                    val intent = methodHookParam.args[3] as Intent
+                    val packageName = getObjectFieldByPath(
+                        methodHookParam.args[4],
+                        "activityInfo.applicationInfo.packageName"
+                    ) as String
+                    if (isFCMIntent(intent) && targetIsAllow(packageName)) {
+                        printLog(
+                            "com.android.server.am.OplusAppStartupManager.isAllowStartFromBroadCast(5) package_name: $packageName",
+                            true
+                        )
+                        methodHookParam.result = true
                     }
                 }
-            });
-        } catch (XposedHelpers.ClassNotFoundError | NoSuchMethodError  e) {
-            printLog("No Such Method com.android.server.am.OplusAppStartupManager.isAllowStartFromBroadCast(5)");
+            })
+        } catch (e: ClassNotFoundError) {
+            printLog("No Such Method com.android.server.am.OplusAppStartupManager.isAllowStartFromBroadCast(5)")
+        } catch (e: NoSuchMethodError) {
+            printLog("No Such Method com.android.server.am.OplusAppStartupManager.isAllowStartFromBroadCast(5)")
         }
     }
 
-    protected void startHookRemovePowerPolicy(){
+    protected fun startHookRemovePowerPolicy() {
         try {
             // MIUI13
-            Class<?> AutoStartManagerService = XposedHelpers.findClass("com.miui.server.smartpower.SmartPowerPolicyManager",loadPackageParam.classLoader);
-            XposedUtils.findAndHookMethodAnyParam(AutoStartManagerService,"shouldInterceptService",new XC_MethodHook() {
-
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) {
-                    Intent intent = (Intent) param.args[0];
-                    if("com.google.firebase.MESSAGING_EVENT".equals(intent.getAction())){
-                        String target = intent.getComponent() == null ? intent.getPackage() : intent.getComponent().getPackageName();
-                        if(targetIsAllow(target)){
-                            printLog("Disable MIUI Intercept: " + target, true);
-                            param.setResult(false);
+            val AutoStartManagerService = XposedHelpers.findClass(
+                "com.miui.server.smartpower.SmartPowerPolicyManager",
+                loadPackageParam.classLoader
+            )
+            findAndHookMethodAnyParam(
+                AutoStartManagerService,
+                "shouldInterceptService",
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        val intent = param.args[0] as Intent
+                        if ("com.google.firebase.MESSAGING_EVENT" == intent.action) {
+                            val target =
+                                if (intent.component == null) intent.getPackage() else intent.component!!
+                                    .packageName
+                            if (targetIsAllow(target!!)) {
+                                printLog("Disable MIUI Intercept: $target", true)
+                                param.result = false
+                            }
                         }
                     }
-                }
-            });
-        } catch (XposedHelpers.ClassNotFoundError | NoSuchMethodError  e) {
-            printLog("No Such Method com.miui.server.smartpower.SmartPowerPolicyManager.shouldInterceptService");
+                })
+        } catch (e: ClassNotFoundError) {
+            printLog("No Such Method com.miui.server.smartpower.SmartPowerPolicyManager.shouldInterceptService")
+        } catch (e: NoSuchMethodError) {
+            printLog("No Such Method com.miui.server.smartpower.SmartPowerPolicyManager.shouldInterceptService")
         }
     }
 }

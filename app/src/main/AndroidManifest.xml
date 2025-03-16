@@ -7,11 +7,12 @@
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="com.catchingnow.icebox.SDK" />
     <uses-permission android:name="web1n.stopapp.permission.disable_api" />
 
     <application
+        android:name=".MyApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -28,11 +29,9 @@
             android:name="xposedminversion"
             android:value="93" />
         <meta-data
-            android:name="xposedsharedprefs"
-            android:value="true" />
-        <meta-data
             android:name="xposedscope"
             android:resource="@array/xposed_scope" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -43,10 +42,10 @@
         </activity>
         <activity-alias
             android:name=".Home"
-            android:targetActivity=".MainActivity"
-            android:label="@string/app_name"
             android:enabled="true"
-            android:exported="true">
+            android:exported="true"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -57,8 +56,7 @@
             android:authorities="com.kooritea.fcmfix.provider"
             android:enabled="true"
             android:exported="true"
-            >
-        </provider>
+            tools:ignore="ExportedContentProvider" />
         <receiver
             android:name=".BootCompletedReceiver"
             android:exported="true">

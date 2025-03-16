@@ -1,134 +1,196 @@
-package com.kooritea.fcmfix.util;
+package com.kooritea.fcmfix.util
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
+import de.robv.android.xposed.XC_MethodHook
+import de.robv.android.xposed.XposedBridge
+import de.robv.android.xposed.XposedHelpers
+import java.lang.reflect.Constructor
+import java.lang.reflect.Method
+import kotlin.math.min
 
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedBridge;
-import de.robv.android.xposed.XposedHelpers;
-
-public class XposedUtils {
-
-
-    public static XC_MethodHook.Unhook findAndHookConstructorAnyParam(String className, ClassLoader classLoader, XC_MethodHook callbacks, Class<?> ...parameterTypes){
-        Class<?> clazz = XposedHelpers.findClass(className,classLoader);
-        return findAndHookConstructorAnyParam(clazz, callbacks, parameterTypes );
+object XposedUtils {
+    fun findAndHookConstructorAnyParam(
+        className: String?,
+        classLoader: ClassLoader?,
+        callbacks: XC_MethodHook?,
+        vararg parameterTypes: Class<*>?
+    ): XC_MethodHook.Unhook {
+        val clazz = XposedHelpers.findClass(className, classLoader)
+        return findAndHookConstructorAnyParam(clazz, callbacks, *parameterTypes)
     }
 
-    public static XC_MethodHook.Unhook findAndHookConstructorAnyParam(Class<?> clazz, XC_MethodHook callbacks, Class<?> ...parameterTypes){
-        Constructor<?> bestMatch = null;
-        int matchCount = 0;
-        for(Constructor<?> constructor : clazz.getDeclaredConstructors()){
-            Class<?>[] constructorParamTypes = constructor.getParameterTypes();
-            int _matchCount = 0;
-            for(int i = 0;i<Math.min(constructorParamTypes.length,parameterTypes.length);i++){
-                if(parameterTypes[i] == constructorParamTypes[i]){
-                    _matchCount++;
+    fun findAndHookConstructorAnyParam(
+        clazz: Class<*>, callbacks: XC_MethodHook?, vararg parameterTypes: Class<*>?
+    ): XC_MethodHook.Unhook {
+        var bestMatch: Constructor<*>? = null
+        var matchCount = 0
+        for (constructor in clazz.declaredConstructors) {
+            val constructorParamTypes = constructor.parameterTypes
+            var _matchCount = 0
+            for (i in 0..<min(
+                constructorParamTypes.size.toDouble(),
+                parameterTypes.size.toDouble()
+            ).toInt()) {
+                if (parameterTypes[i] == constructorParamTypes[i]) {
+                    _matchCount++
                 }
             }
-            if(_matchCount >= matchCount){
-                matchCount = _matchCount;
-                bestMatch = constructor;
+            if (_matchCount >= matchCount) {
+                matchCount = _matchCount
+                bestMatch = constructor
             }
         }
-        if(bestMatch == null){
-            throw new NoSuchMethodError(clazz.getName());
+        if (bestMatch == null) {
+            throw NoSuchMethodError(clazz.name)
         }
-        return XposedBridge.hookMethod(XposedHelpers.findConstructorExact(clazz,bestMatch.getParameterTypes()), callbacks);
+        return XposedBridge.hookMethod(
+            XposedHelpers.findConstructorExact(
+                clazz,
+                *bestMatch.parameterTypes
+            ), callbacks
+        )
     }
 
-    public static XC_MethodHook.Unhook findAndHookMethodMostParam(Class<?> clazz, String methodName, XC_MethodHook callbacks){
-        Method bestMatch = null;
-        for(Method method : clazz.getDeclaredMethods()){
-            if(methodName.equals(method.getName())){
-                if(bestMatch == null || method.getParameterTypes().length > bestMatch.getParameterTypes().length){
-                    bestMatch = method;
+    fun findAndHookMethodMostParam(
+        clazz: Class<*>,
+        methodName: String,
+        callbacks: XC_MethodHook?
+    ): XC_MethodHook.Unhook {
+        var bestMatch: Method? = null
+        for (method in clazz.declaredMethods) {
+            if (methodName == method.name) {
+                if (bestMatch == null || method.parameterTypes.size > bestMatch.parameterTypes.size) {
+                    bestMatch = method
                 }
             }
         }
-        if(bestMatch == null){
-            throw new NoSuchMethodError(clazz.getName() + '#' + methodName);
+        if (bestMatch == null) {
+            throw NoSuchMethodError(clazz.name + '#' + methodName)
         }
-        return XposedBridge.hookMethod(XposedHelpers.findMethodExact(clazz,methodName,bestMatch.getParameterTypes()), callbacks);
+        return XposedBridge.hookMethod(
+            XposedHelpers.findMethodExact(
+                clazz,
+                methodName,
+                *bestMatch.parameterTypes
+            ), callbacks
+        )
     }
 
-    public static XC_MethodHook.Unhook findAndHookMethodAnyParam(Class<?> clazz, String methodName, XC_MethodHook callbacks, Object ...parameterTypes){
-        Method bestMatch = null;
-        int matchCount = 0;
-        for(Method method : clazz.getDeclaredMethods()){
-            if(methodName.equals(method.getName())){
-                Class<?>[] methodParamTypes = method.getParameterTypes();
-                int _matchCount = 0;
-                for(int i = 0;i<Math.min(methodParamTypes.length,parameterTypes.length);i++){
-                    if(parameterTypes[i] == methodParamTypes[i]){
-                        _matchCount++;
+    fun findAndHookMethodAnyParam(
+        clazz: Class<*>,
+        methodName: String,
+        callbacks: XC_MethodHook?,
+        vararg parameterTypes: Any?
+    ): XC_MethodHook.Unhook {
+        var bestMatch: Method? = null
+        var matchCount = 0
+        for (method in clazz.declaredMethods) {
+            if (methodName == method.name) {
+                val methodParamTypes = method.parameterTypes
+                var _matchCount = 0
+                for (i in 0..<min(
+                    methodParamTypes.size.toDouble(),
+                    parameterTypes.size.toDouble()
+                ).toInt()) {
+                    if (parameterTypes[i] === methodParamTypes[i]) {
+                        _matchCount++
                     }
                 }
-                if(_matchCount >= matchCount){
-                    matchCount = _matchCount;
-                    bestMatch = method;
+                if (_matchCount >= matchCount) {
+                    matchCount = _matchCount
+                    bestMatch = method
                 }
             }
         }
-        if(bestMatch == null){
-            throw new NoSuchMethodError(clazz.getName() + '#' + methodName);
+        if (bestMatch == null) {
+            throw NoSuchMethodError(clazz.name + '#' + methodName)
         }
-        return XposedBridge.hookMethod(XposedHelpers.findMethodExact(clazz,methodName,bestMatch.getParameterTypes()), callbacks);
+        return XposedBridge.hookMethod(
+            XposedHelpers.findMethodExact(
+                clazz,
+                methodName,
+                *bestMatch.parameterTypes
+            ), callbacks
+        )
     }
 
-    public static XC_MethodHook.Unhook tryFindAndHookMethod(Class<?> clazz, String methodName, int parameterCount, XC_MethodHook callbacks) {
-        try{
-            return findAndHookMethod(clazz,methodName,parameterCount,callbacks);
-        }catch (NoSuchMethodError e) {
-            return null;
+    fun tryFindAndHookMethod(
+        clazz: Class<*>,
+        methodName: String,
+        parameterCount: Int,
+        callbacks: XC_MethodHook?
+    ): XC_MethodHook.Unhook? {
+        return try {
+            findAndHookMethod(clazz, methodName, parameterCount, callbacks)
+        } catch (e: NoSuchMethodError) {
+            null
         }
     }
-    public static XC_MethodHook.Unhook findAndHookMethod(Class<?> clazz, String methodName, int parameterCount, XC_MethodHook callbacks) {
-        Method method = null;
-        for (Method m : clazz.getDeclaredMethods()) {
-            if (m.getName().equals(methodName) && m.getParameterTypes().length == parameterCount) {
-                method = m;
+
+    fun findAndHookMethod(
+        clazz: Class<*>,
+        methodName: String,
+        parameterCount: Int,
+        callbacks: XC_MethodHook?
+    ): XC_MethodHook.Unhook {
+        var method: Method? = null
+        for (m in clazz.declaredMethods) {
+            if (m.name == methodName && m.parameterTypes.size == parameterCount) {
+                method = m
             }
         }
         if (method == null) {
-            throw new NoSuchMethodError(clazz.getName() + '#' + methodName);
+            throw NoSuchMethodError(clazz.name + '#' + methodName)
         }
-        return XposedBridge.hookMethod(XposedHelpers.findMethodExact(clazz,methodName, method.getParameterTypes()), callbacks);
+        return XposedBridge.hookMethod(
+            XposedHelpers.findMethodExact(
+                clazz,
+                methodName,
+                *method.parameterTypes
+            ), callbacks
+        )
     }
 
-    public static Method findMethod(Class<?> clazz, String methodName, int parameterCount) {
-        Method method = null;
-        for (Method m : clazz.getDeclaredMethods()) {
-            if (m.getName().equals(methodName) && m.getParameterTypes().length == parameterCount) {
-                method = m;
+    fun findMethod(clazz: Class<*>, methodName: String, parameterCount: Int): Method? {
+        var method: Method? = null
+        for (m in clazz.declaredMethods) {
+            if (m.name == methodName && m.parameterTypes.size == parameterCount) {
+                method = m
             }
         }
-        return method;
+        return method
     }
 
-    public static XC_MethodHook.Unhook findAndHookMethodAnyParam(String className, ClassLoader classLoader, String methodName, XC_MethodHook callbacks, Object ...parameterTypes){
-        Class<?> clazz = XposedHelpers.findClass(className,classLoader);
-        return findAndHookMethodAnyParam(clazz,methodName,callbacks,parameterTypes);
+    fun findAndHookMethodAnyParam(
+        className: String?,
+        classLoader: ClassLoader?,
+        methodName: String,
+        callbacks: XC_MethodHook?,
+        vararg parameterTypes: Any?
+    ): XC_MethodHook.Unhook {
+        val clazz = XposedHelpers.findClass(className, classLoader)
+        return findAndHookMethodAnyParam(clazz, methodName, callbacks, *parameterTypes)
     }
 
-    public static Object getObjectFieldByPath(Object obj, String pathFieldName, Class<?> clazz){
-        Object result = getObjectFieldByPath(obj,pathFieldName);
-        if(result.getClass() != clazz){
-            throw new NoSuchFieldError(obj.getClass().getName() + "#" +pathFieldName + ";Found " + result.getClass().getName() + " but not equal " + clazz.getName() + ".");
+    fun getObjectFieldByPath(obj: Any, pathFieldName: String, clazz: Class<*>): Any {
+        val result = getObjectFieldByPath(obj, pathFieldName)
+        if (result.javaClass != clazz) {
+            throw NoSuchFieldError(obj.javaClass.name + "#" + pathFieldName + ";Found " + result.javaClass.name + " but not equal " + clazz.name + ".")
         }
-        return result;
+        return result
     }
 
-    public static Object getObjectFieldByPath(Object obj, String pathFieldName){
-        String[] paths = pathFieldName.split("\\.");
-        Object tmp = obj;
-        try{
-            for(String fieldName : paths){
-                tmp = XposedHelpers.getObjectField(tmp,fieldName);
+    @JvmStatic
+    fun getObjectFieldByPath(obj: Any, pathFieldName: String): Any {
+        val paths =
+            pathFieldName.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        var tmp = obj
+        try {
+            for (fieldName in paths) {
+                tmp = XposedHelpers.getObjectField(tmp, fieldName)
             }
-        }catch (Exception e){
-            throw new NoSuchFieldError(obj.getClass().getName() + "#" +pathFieldName);
+        } catch (e: Exception) {
+            throw NoSuchFieldError(obj.javaClass.name + "#" + pathFieldName)
         }
-        return tmp;
+        return tmp
     }
 }
