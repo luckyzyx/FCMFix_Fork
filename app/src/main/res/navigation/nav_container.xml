@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_container.xml"
+    app:startDestination="@id/appListFragment">
+
+    <fragment
+        android:id="@+id/appListFragment"
+        android:name="com.kooritea.fcmfix.fragment.AppListFragment"
+        android:label="@string/app_name">
+        <argument
+            android:name="@string/app_name"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.kooritea.fcmfix.fragment.SettingsFragment"
+        android:label="@string/title_settings">
+        <argument
+            android:name="@string/title_settings"
+            app:argType="string" />
+    </fragment>
+
+</navigation>

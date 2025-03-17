@@ -46,15 +46,21 @@ dependencies {
     compileOnly(libs.xposed.api)
     implementation(libs.yukihookapi)
     ksp(libs.ksp.yukihookapi)
+    implementation(libs.dexkit)
 
     implementation(libs.material)
     implementation(libs.constraintlayout)
+    implementation(libs.preference.ktx)
     implementation(libs.swiperefreshlayout)
+    implementation(libs.navigation.fragment.ktx)
+    implementation(libs.navigation.ui.ktx)
+    implementation(libs.fastscroll)
+
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.net)
     implementation(libs.okhttp)
-    implementation(libs.fastscroll)
+
 }
 
 fun getVersionCode(): Int {

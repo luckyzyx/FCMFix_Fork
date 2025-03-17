@@ -4,36 +4,17 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <item
-        android:id="@+id/hide_launcher_icon"
-        android:checkable="true"
-        android:title="隐藏启动器图标"
-        app:showAsAction="never"
-        tools:ignore="HardcodedText" />
-
-    <item
-        android:id="@+id/disable_auto_clean_notification"
-        android:checkable="true"
-        android:title="阻止应用停止时自动清除通知"
-        app:showAsAction="never"
-        tools:ignore="HardcodedText" />
-
-    <item
-        android:id="@+id/include_ice_box_disable_app"
-        android:checkable="true"
-        android:title="允许唤醒被冰箱冻结的应用"
-        app:showAsAction="never"
-        tools:ignore="HardcodedText" />
-
-    <item
         android:id="@+id/select_all_fcm_apps"
+        android:icon="@drawable/baseline_check_box_24"
         android:title="全选包含 FCM 的应用"
-        app:showAsAction="never"
+        app:showAsAction="ifRoom"
         tools:ignore="HardcodedText" />
 
     <item
-        android:id="@+id/open_fcm_diagnostics"
-        android:title="打开FCM Diagnostics"
-        app:showAsAction="never"
+        android:id="@+id/menu_settings"
+        android:icon="@drawable/baseline_settings_24"
+        android:title="设置"
+        app:showAsAction="ifRoom"
         tools:ignore="HardcodedText" />
 
 </menu>
