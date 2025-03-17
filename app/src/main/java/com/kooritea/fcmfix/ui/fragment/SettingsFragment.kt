@@ -1,25 +1,15 @@
-package com.kooritea.fcmfix.fragment
+package com.kooritea.fcmfix.ui.fragment
 
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
-import com.kooritea.fcmfix.activity.MainActivity
+import com.kooritea.fcmfix.BuildConfig
 
 class SettingsFragment : PreferenceFragmentCompat() {
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
-//        (activity as MainActivity).supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        return super.onCreateView(inflater, container, savedInstanceState)
-    }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         preferenceManager.sharedPreferencesName = "config"
@@ -28,14 +18,18 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 title = "隐藏启动器图标"
                 key = "hide_launcher_icon"
                 isChecked = context.packageManager.getComponentEnabledSetting(
-                    ComponentName(context.packageName, "com.kooritea.fcmfix.Home")
+                    ComponentName(context.packageName, "${BuildConfig.APPLICATION_ID}.Home")
                 ) == PackageManager.COMPONENT_ENABLED_STATE_DISABLED
                 isPersistent = false
                 isIconSpaceReserved = false
                 setOnPreferenceChangeListener { _, isChecked ->
                     context.packageManager.setComponentEnabledSetting(
-                        ComponentName("com.kooritea.fcmfix", "com.kooritea.fcmfix.Home"),
-                        if (isChecked as Boolean) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                        ComponentName(
+                            BuildConfig.APPLICATION_ID,
+                            "${BuildConfig.APPLICATION_ID}.Home"
+                        ),
+                        if (isChecked as Boolean) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                        else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                         PackageManager.DONT_KILL_APP
                     )
                     true

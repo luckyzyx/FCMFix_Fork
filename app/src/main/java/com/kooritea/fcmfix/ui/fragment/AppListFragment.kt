@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.fragment
+package com.kooritea.fcmfix.ui.fragment
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -33,11 +33,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.drake.net.utils.scopeLife
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
+import com.kooritea.fcmfix.BuildConfig
 import com.kooritea.fcmfix.R
 import com.kooritea.fcmfix.data.AppInfo
 import com.kooritea.fcmfix.databinding.AppItemBinding
 import com.kooritea.fcmfix.databinding.FragmentListBinding
-import com.kooritea.fcmfix.util.IceboxUtils
+import com.kooritea.fcmfix.hook.IceboxUtils
 import me.zhanghai.android.fastscroll.FastScrollerBuilder
 import kotlin.system.exitProcess
 
@@ -54,6 +55,7 @@ class AppListFragment : Fragment(), MenuProvider {
 
     private lateinit var prefs: SharedPreferences
 
+    @Suppress("DEPRECATION")
     @SuppressLint("WorldReadableFiles")
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -79,6 +81,7 @@ class AppListFragment : Fragment(), MenuProvider {
             }
         }
 
+        @Suppress("SENSELESS_COMPARISON")
         if (prefs == null) {
             MaterialAlertDialogBuilder(requireActivity()).apply {
                 setCancelable(false)
@@ -219,7 +222,7 @@ class AppListFragment : Fragment(), MenuProvider {
                 putBoolean("init", true)
                 putStringSet("allowList", enabledList.toSet())
             }
-            requireActivity().sendBroadcast(Intent("com.kooritea.fcmfix.update.config"))
+            requireActivity().sendBroadcast(Intent("${BuildConfig.APPLICATION_ID}.update.config"))
         } catch (e: Exception) {
             Log.e("updateConfig", e.toString())
         }

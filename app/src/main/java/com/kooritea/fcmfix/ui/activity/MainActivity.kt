@@ -1,13 +1,11 @@
-package com.kooritea.fcmfix.activity
+package com.kooritea.fcmfix.ui.activity
 
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import com.kooritea.fcmfix.R
 import com.kooritea.fcmfix.databinding.ActivityMainBinding
