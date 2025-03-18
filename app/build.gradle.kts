@@ -14,7 +14,8 @@ android {
     defaultConfig {
         applicationId = "com.luckyzyx.fcmfix"
         minSdk = 29
-        targetSdk = 35
+        //noinspection ExpiredTargetSdkVersion
+        targetSdk = 28
         versionCode = getVersionCode()
         versionName = "dev"
         ndk.abiFilters.add("arm64-v8a")

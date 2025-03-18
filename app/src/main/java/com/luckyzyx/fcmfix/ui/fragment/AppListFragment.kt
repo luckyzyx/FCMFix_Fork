@@ -1,9 +1,7 @@
 package com.luckyzyx.fcmfix.ui.fragment
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.ArraySet
@@ -21,7 +19,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
@@ -31,7 +28,6 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.drake.net.utils.scopeLife
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.luckyzyx.fcmfix.BuildConfig
 import com.luckyzyx.fcmfix.R
@@ -39,8 +35,10 @@ import com.luckyzyx.fcmfix.data.AppInfo
 import com.luckyzyx.fcmfix.databinding.AppItemBinding
 import com.luckyzyx.fcmfix.databinding.FragmentListBinding
 import com.luckyzyx.fcmfix.hook.IceboxUtils
+import com.luckyzyx.fcmfix.utils.SPUtils.getBoolean
+import com.luckyzyx.fcmfix.utils.SPUtils.getStringSet
+import com.luckyzyx.fcmfix.utils.SPUtils.putStringSet
 import me.zhanghai.android.fastscroll.FastScrollerBuilder
-import kotlin.system.exitProcess
 
 class AppListFragment : Fragment(), MenuProvider {
 
@@ -53,14 +51,9 @@ class AppListFragment : Fragment(), MenuProvider {
     private var disableAutoCleanNotification = false
     private var includeIceBoxDisableApp = false
 
-    private lateinit var prefs: SharedPreferences
-
-    @Suppress("DEPRECATION")
-    @SuppressLint("WorldReadableFiles")
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        prefs = requireActivity().getSharedPreferences("config", Context.MODE_WORLD_READABLE)
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
         binding = FragmentListBinding.inflate(inflater)
         return binding.root
@@ -78,22 +71,6 @@ class AppListFragment : Fragment(), MenuProvider {
         binding.swipeRefreshLayout.apply {
             setOnRefreshListener {
                 loadData()
-            }
-        }
-
-        @Suppress("SENSELESS_COMPARISON")
-        if (prefs == null) {
-            MaterialAlertDialogBuilder(requireActivity()).apply {
-                setCancelable(false)
-                setMessage("模块未激活,请重试!")
-                setPositiveButton(android.R.string.ok) { _, _ -> exitProcess(0) }
-                setOnDismissListener { exitProcess(0) }
-                show()
-            }
-            return
-        } else {
-            prefs.edit(true) {
-                putBoolean("init", true)
             }
         }
 
@@ -136,9 +113,11 @@ class AppListFragment : Fragment(), MenuProvider {
     private fun loadAllowData() {
         try {
             enabledList.clear()
-            enabledList.addAll(prefs.getStringSet("allowList", ArraySet()) ?: ArraySet())
-            disableAutoCleanNotification = prefs.getBoolean("disableAutoCleanNotification", false)
-            includeIceBoxDisableApp = prefs.getBoolean("includeIceBoxDisableApp", false)
+            enabledList.addAll(requireActivity().getStringSet("config", "allowList", ArraySet()))
+            disableAutoCleanNotification =
+                requireActivity().getBoolean("config", "disableAutoCleanNotification", false)
+            includeIceBoxDisableApp =
+                requireActivity().getBoolean("config", "includeIceBoxDisableApp", false)
         } catch (e: Throwable) {
             Log.e("loadAllowData", e.toString())
         }
@@ -218,10 +197,7 @@ class AppListFragment : Fragment(), MenuProvider {
 
     private fun updateConfig() {
         try {
-            prefs.edit(commit = true) {
-                putBoolean("init", true)
-                putStringSet("allowList", enabledList.toSet())
-            }
+            requireActivity().putStringSet("config", "allowList", enabledList.toSet())
             requireActivity().sendBroadcast(Intent("${BuildConfig.APPLICATION_ID}.update.config"))
         } catch (e: Exception) {
             Log.e("updateConfig", e.toString())
