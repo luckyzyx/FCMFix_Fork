@@ -51,7 +51,11 @@ object HookUtils {
         YLog.debug(text, throwable)
         val log = Intent("${BuildConfig.APPLICATION_ID}.log")
         log.putExtra("text", text)
-        sendBroadcast(log)
+        try {
+            sendBroadcast(log)
+        } catch (_: Throwable) {
+
+        }
     }
 
     fun isFCMIntent(intent: Intent): Boolean {

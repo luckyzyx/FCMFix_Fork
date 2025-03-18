@@ -42,15 +42,28 @@ android {
     }
     applicationVariants.all {
         val buildType = buildType.name
-        val version = "${versionName}_${versionCode}"
+        val version = "${versionName}-${versionCode}"
         println("buildVersion -> $version ($buildType)")
         outputs.all {
             @Suppress("DEPRECATION")
             if (this is com.android.build.gradle.api.ApkVariantOutput) {
-                if (buildType == "release") outputFileName = "FCMFix_${version}.apk"
-                if (buildType == "debug") outputFileName = "FCMFix_${version}_debug.apk"
+                if (buildType == "release") outputFileName = "FCMFix-${version}.apk"
+                if (buildType == "debug") outputFileName = "FCMFix-${version}_debug.apk"
                 println("outputFileName -> $outputFileName")
             }
+        }
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+        resources {
+            excludes += "META-INF/**"
+            excludes += "okhttp3/**"
+            excludes += "kotlin/**"
+            excludes += "**.properties"
+            excludes += "**.bin"
+            excludes += "kotlin-tooling-metadata.json"
         }
     }
 }
