@@ -1,5 +1,6 @@
 package com.kooritea.fcmfix.hook.scopes.android
 
+import android.service.notification.NotificationListenerService
 import android.util.ArraySet
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.factory.method
@@ -31,8 +32,13 @@ object KeepNotification : YukiBaseHooker() {
                         ?: return@before
                     val reason = args(args.indexOfLast { it == IntType }).cast<Int>()
                         ?: return@before
-                    if (disableACN && isAllowPackage(allowList, packName) && reason == 5) {
-                        resultNull()
+                    if (disableACN && isAllowPackage(allowList, packName)) {
+                        if (reason == NotificationListenerService.REASON_PACKAGE_CHANGED) {
+                            resultNull()
+                        }
+                        if (reason == 10020) { // cos15/oos15
+                            resultNull()
+                        }
                     }
                 }
             }
