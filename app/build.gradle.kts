@@ -1,6 +1,8 @@
 import java.io.FileInputStream
 import java.util.Properties
 
+val isBuildCI = gradle.startParameter.taskNames.any { it == "buildCI" }
+
 plugins {
     alias(libs.plugins.agp.app)
     alias(libs.plugins.kotlin)
@@ -17,7 +19,7 @@ android {
         //noinspection ExpiredTargetSdkVersion
         targetSdk = 28
         versionCode = getVersionCode()
-        versionName = "dev"
+        versionName = if (isBuildCI) "ci" else "dev"
         ndk.abiFilters.add("arm64-v8a")
     }
 
@@ -40,9 +42,7 @@ android {
     }
     applicationVariants.all {
         val buildType = buildType.name
-        val isBuildCI = gradle.startParameter.taskNames.any { it == "buildCI" }
-        val version = if (isBuildCI) "ci_${versionCode}"
-        else "${versionName}_${versionCode}"
+        val version = "${versionName}_${versionCode}"
         println("buildVersion -> $version ($buildType)")
         outputs.all {
             @Suppress("DEPRECATION")
@@ -64,9 +64,8 @@ dependencies {
     implementation(fileTree("libs"))
 
     compileOnly(libs.xposed.api)
-    if (gradle.startParameter.taskNames.any { it == "buildCI" }) {
-        implementation(libs.yukihookapi)
-    } else implementation(libs.yukihookapi.local)
+    if (isBuildCI) implementation(libs.yukihookapi)
+    else implementation(libs.yukihookapi.local)
 
     ksp(libs.ksp.yukihookapi)
     implementation(libs.dexkit)
