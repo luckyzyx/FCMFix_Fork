@@ -16,6 +16,7 @@
 ### 作用域
 
 - 勾选gms服务可以在无法按预期启动目标应用时代为发送一条提示通知
+- 使用Timer间隔发送GCM进行心跳重连
 - 但是会破坏play integrity legacy check
 
 ### 关于fcm
