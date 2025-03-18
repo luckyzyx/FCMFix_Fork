@@ -63,7 +63,10 @@ dependencies {
     implementation(fileTree("libs"))
 
     compileOnly(libs.xposed.api)
-    implementation(libs.yukihookapi)
+    if (gradle.startParameter.taskNames.any { it == "buildCI" }) {
+        implementation(libs.yukihookapi)
+    } else implementation(libs.yukihookapi.local)
+
     ksp(libs.ksp.yukihookapi)
     implementation(libs.dexkit)
 
