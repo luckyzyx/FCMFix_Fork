@@ -14,13 +14,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Filter
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.MenuProvider
-import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -32,8 +31,8 @@ import com.google.android.material.materialswitch.MaterialSwitch
 import com.luckyzyx.fcmfix.BuildConfig
 import com.luckyzyx.fcmfix.R
 import com.luckyzyx.fcmfix.data.AppInfo
-import com.luckyzyx.fcmfix.databinding.AppItemBinding
 import com.luckyzyx.fcmfix.databinding.FragmentListBinding
+import com.luckyzyx.fcmfix.databinding.LayoutAppinfoSwitchItemBinding
 import com.luckyzyx.fcmfix.hook.IceboxUtils
 import com.luckyzyx.fcmfix.utils.SPUtils.getBoolean
 import com.luckyzyx.fcmfix.utils.SPUtils.getStringSet
@@ -219,7 +218,7 @@ class AppListFragment : Fragment(), MenuProvider {
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val binding = AppItemBinding.inflate(
+            val binding = LayoutAppinfoSwitchItemBinding.inflate(
                 LayoutInflater.from(parent.context), parent, false
             )
             return ViewHolder(binding)
@@ -229,6 +228,7 @@ class AppListFragment : Fragment(), MenuProvider {
             return filterDatas.size
         }
 
+        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val appInfo = filterDatas[position]
             val appIcon = appInfo.icon
@@ -237,8 +237,7 @@ class AppListFragment : Fragment(), MenuProvider {
             val isFcm = appInfo.isFcm
 
             holder.appIcon.setImageDrawable(appIcon)
-            holder.appName.text = appName
-            holder.fcm.isVisible = isFcm
+            holder.appName.text = appName + if (isFcm) " [FCM]" else ""
             holder.packName.text = packName
             holder.appInfoView.setOnClickListener(null)
             holder.switch.setOnCheckedChangeListener(null)
@@ -284,12 +283,12 @@ class AppListFragment : Fragment(), MenuProvider {
         }
     }
 
-    class ViewHolder(binding: AppItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        val appInfoView: LinearLayout = binding.root
-        val appIcon: ImageView = binding.icon
-        val appName: TextView = binding.name
-        val fcm: TextView = binding.includeFcm
-        val packName: TextView = binding.packageName
-        val switch: MaterialSwitch = binding.switchItem
+    class ViewHolder(binding: LayoutAppinfoSwitchItemBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        val appInfoView: ConstraintLayout = binding.root
+        val appIcon: ImageView = binding.appIcon
+        val appName: TextView = binding.appName
+        val packName: TextView = binding.packName
+        val switch: MaterialSwitch = binding.switchview
     }
 }
