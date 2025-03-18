@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.hook
+package com.luckyzyx.fcmfix.hook
 
 import android.app.PendingIntent
 import android.content.Context

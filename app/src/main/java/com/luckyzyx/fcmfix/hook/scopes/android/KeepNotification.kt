@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.hook.scopes.android
+package com.luckyzyx.fcmfix.hook.scopes.android
 
 import android.service.notification.NotificationListenerService
 import android.util.ArraySet
@@ -6,7 +6,7 @@ import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.factory.method
 import com.highcapable.yukihookapi.hook.type.java.IntType
 import com.highcapable.yukihookapi.hook.type.java.StringClass
-import com.kooritea.fcmfix.hook.HookUtils.isAllowPackage
+import com.luckyzyx.fcmfix.hook.HookUtils.isAllowPackage
 
 object KeepNotification : YukiBaseHooker() {
 

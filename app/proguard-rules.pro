@@ -19,3 +19,18 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-ignorewarnings
+-dontpreverify
+-optimizationpasses 7
+-verbose
+-printmapping proguardMapping.txt
+-adaptclassstrings
+-adaptresourcefilenames
+-adaptresourcefilecontents
+-renamesourcefileattribute SourceFile
+-allowaccessmodification
+-repackageclasses
+-overloadaggressively
+-keepattributes *Annotation*
+-keepattributes Signature

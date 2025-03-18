@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.ui.fragment
+package com.luckyzyx.fcmfix.ui.fragment
 
 import android.content.ComponentName
 import android.content.Intent
@@ -7,7 +7,7 @@ import android.os.Bundle
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
-import com.kooritea.fcmfix.BuildConfig
+import com.luckyzyx.fcmfix.BuildConfig
 
 class SettingsFragment : PreferenceFragmentCompat() {
 

@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.ui.fragment
+package com.luckyzyx.fcmfix.ui.fragment
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -33,12 +33,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.drake.net.utils.scopeLife
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
-import com.kooritea.fcmfix.BuildConfig
-import com.kooritea.fcmfix.R
-import com.kooritea.fcmfix.data.AppInfo
-import com.kooritea.fcmfix.databinding.AppItemBinding
-import com.kooritea.fcmfix.databinding.FragmentListBinding
-import com.kooritea.fcmfix.hook.IceboxUtils
+import com.luckyzyx.fcmfix.BuildConfig
+import com.luckyzyx.fcmfix.R
+import com.luckyzyx.fcmfix.data.AppInfo
+import com.luckyzyx.fcmfix.databinding.AppItemBinding
+import com.luckyzyx.fcmfix.databinding.FragmentListBinding
+import com.luckyzyx.fcmfix.hook.IceboxUtils
 import me.zhanghai.android.fastscroll.FastScrollerBuilder
 import kotlin.system.exitProcess
 

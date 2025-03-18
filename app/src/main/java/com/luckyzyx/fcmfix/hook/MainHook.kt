@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.hook
+package com.luckyzyx.fcmfix.hook
 
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
@@ -13,15 +13,15 @@ import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.factory.encase
 import com.highcapable.yukihookapi.hook.log.YLog
 import com.highcapable.yukihookapi.hook.xposed.proxy.IYukiHookXposedInit
-import com.kooritea.fcmfix.BuildConfig
-import com.kooritea.fcmfix.hook.HookUtils.fileIsExists
-import com.kooritea.fcmfix.hook.scopes.android.AutoStartFix
-import com.kooritea.fcmfix.hook.scopes.android.BroadcastFix
-import com.kooritea.fcmfix.hook.scopes.android.KeepNotification
-import com.kooritea.fcmfix.hook.scopes.gms.AddButton
-import com.kooritea.fcmfix.hook.scopes.gms.BroadcastNotify
-import com.kooritea.fcmfix.hook.scopes.gms.Heartbeat
-import com.kooritea.fcmfix.hook.scopes.gms.RegisterLogReceiver
+import com.luckyzyx.fcmfix.BuildConfig
+import com.luckyzyx.fcmfix.hook.HookUtils.fileIsExists
+import com.luckyzyx.fcmfix.hook.scopes.android.AutoStartFix
+import com.luckyzyx.fcmfix.hook.scopes.android.BroadcastFix
+import com.luckyzyx.fcmfix.hook.scopes.android.KeepNotification
+import com.luckyzyx.fcmfix.hook.scopes.gms.AddButton
+import com.luckyzyx.fcmfix.hook.scopes.gms.BroadcastNotify
+import com.luckyzyx.fcmfix.hook.scopes.gms.Heartbeat
+import com.luckyzyx.fcmfix.hook.scopes.gms.RegisterLogReceiver
 import de.robv.android.xposed.XSharedPreferences
 
 @InjectYukiHookWithXposed

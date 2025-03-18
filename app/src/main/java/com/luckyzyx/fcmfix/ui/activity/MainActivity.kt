@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.ui.activity
+package com.luckyzyx.fcmfix.ui.activity
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -7,8 +7,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupActionBarWithNavController
-import com.kooritea.fcmfix.R
-import com.kooritea.fcmfix.databinding.ActivityMainBinding
+import com.luckyzyx.fcmfix.R
+import com.luckyzyx.fcmfix.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding

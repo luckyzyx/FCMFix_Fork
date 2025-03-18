@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.hook
+package com.luckyzyx.fcmfix.hook
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,7 +7,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.highcapable.yukihookapi.hook.log.YLog
-import com.kooritea.fcmfix.BuildConfig
+import com.luckyzyx.fcmfix.BuildConfig
 import java.io.File
 
 object HookUtils {

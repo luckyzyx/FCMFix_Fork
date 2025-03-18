@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.hook.scopes.gms
+package com.luckyzyx.fcmfix.hook.scopes.gms
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
@@ -10,9 +10,9 @@ import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.factory.method
 import com.highcapable.yukihookapi.hook.type.android.ContextClass
 import com.highcapable.yukihookapi.hook.type.android.IntentClass
-import com.kooritea.fcmfix.hook.HookUtils.isAllowPackage
-import com.kooritea.fcmfix.hook.HookUtils.sendGsmLogBroadcast
-import com.kooritea.fcmfix.hook.HookUtils.sendNotification
+import com.luckyzyx.fcmfix.hook.HookUtils.isAllowPackage
+import com.luckyzyx.fcmfix.hook.HookUtils.sendGsmLogBroadcast
+import com.luckyzyx.fcmfix.hook.HookUtils.sendNotification
 
 object BroadcastNotify : YukiBaseHooker() {
 

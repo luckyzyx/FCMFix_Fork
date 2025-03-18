@@ -9,16 +9,15 @@ plugins {
 
 android {
     compileSdk = 35
-    namespace = "com.kooritea.fcmfix"
+    namespace = "com.luckyzyx.fcmfix"
 
     defaultConfig {
-        applicationId = "com.kooritea.fcmfix"
+        applicationId = "com.luckyzyx.fcmfix"
         minSdk = 29
         targetSdk = 35
         versionCode = getVersionCode()
         versionName = "dev"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        ndk.abiFilters.add("arm64-v8a")
     }
 
     buildTypes {
@@ -38,6 +37,26 @@ android {
         viewBinding = true
         buildConfig = true
     }
+    applicationVariants.all {
+        val buildType = buildType.name
+        val isBuildCI = gradle.startParameter.taskNames.any { it == "buildCI" }
+        val version = if (isBuildCI) "ci_${versionCode}"
+        else "${versionName}_${versionCode}"
+        println("buildVersion -> $version ($buildType)")
+        outputs.all {
+            @Suppress("DEPRECATION")
+            if (this is com.android.build.gradle.api.ApkVariantOutput) {
+                if (buildType == "release") outputFileName = "FCMFix_${version}.apk"
+                if (buildType == "debug") outputFileName = "FCMFix_${version}_debug.apk"
+                println("outputFileName -> $outputFileName")
+            }
+        }
+    }
+}
+
+tasks.register("buildCI") {
+    group = "ci"
+    dependsOn("assembleRelease")
 }
 
 dependencies {

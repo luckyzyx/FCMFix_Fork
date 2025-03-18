@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.hook.scopes.gms
+package com.luckyzyx.fcmfix.hook.scopes.gms
 
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
@@ -12,7 +12,7 @@ import com.highcapable.yukihookapi.hook.factory.method
 import com.highcapable.yukihookapi.hook.log.YLog
 import com.highcapable.yukihookapi.hook.type.java.AnyArrayClass
 import com.highcapable.yukihookapi.hook.type.java.StringClass
-import com.kooritea.fcmfix.BuildConfig
+import com.luckyzyx.fcmfix.BuildConfig
 
 object RegisterLogReceiver : YukiBaseHooker() {
 

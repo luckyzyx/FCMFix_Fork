@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.hook.scopes.gms
+package com.luckyzyx.fcmfix.hook.scopes.gms
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -8,8 +8,8 @@ import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.factory.field
 import com.highcapable.yukihookapi.hook.factory.method
 import com.highcapable.yukihookapi.hook.type.android.ButtonClass
-import com.kooritea.fcmfix.BuildConfig
-import com.kooritea.fcmfix.hook.HookUtils.sendGsmLogBroadcast
+import com.luckyzyx.fcmfix.BuildConfig
+import com.luckyzyx.fcmfix.hook.HookUtils.sendGsmLogBroadcast
 
 object AddButton : YukiBaseHooker() {
     @SuppressLint("SetTextI18n")

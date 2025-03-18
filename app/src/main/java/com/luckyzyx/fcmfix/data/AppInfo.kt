@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.data
+package com.luckyzyx.fcmfix.data
 
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager

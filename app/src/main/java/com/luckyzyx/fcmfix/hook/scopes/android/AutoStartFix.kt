@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.hook.scopes.android
+package com.luckyzyx.fcmfix.hook.scopes.android
 
 import android.content.Context
 import android.content.Intent
@@ -11,9 +11,9 @@ import com.highcapable.yukihookapi.hook.factory.method
 import com.highcapable.yukihookapi.hook.type.android.IntentClass
 import com.highcapable.yukihookapi.hook.type.android.ResolveInfoClass
 import com.highcapable.yukihookapi.hook.type.java.BooleanType
-import com.kooritea.fcmfix.hook.HookUtils.isAllowPackage
-import com.kooritea.fcmfix.hook.HookUtils.isFCMIntent
-import com.kooritea.fcmfix.hook.HookUtils.sendGsmLogBroadcast
+import com.luckyzyx.fcmfix.hook.HookUtils.isAllowPackage
+import com.luckyzyx.fcmfix.hook.HookUtils.isFCMIntent
+import com.luckyzyx.fcmfix.hook.HookUtils.sendGsmLogBroadcast
 
 object AutoStartFix : YukiBaseHooker() {
 

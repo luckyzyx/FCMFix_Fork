@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.hook.scopes.gms
+package com.luckyzyx.fcmfix.hook.scopes.gms
 
 import android.content.Context
 import android.content.Intent
@@ -16,7 +16,7 @@ import com.highcapable.yukihookapi.hook.type.java.IntType
 import com.highcapable.yukihookapi.hook.type.java.ListClass
 import com.highcapable.yukihookapi.hook.type.java.LongType
 import com.highcapable.yukihookapi.hook.type.java.StringClass
-import com.kooritea.fcmfix.hook.HookUtils.sendGsmLogBroadcast
+import com.luckyzyx.fcmfix.hook.HookUtils.sendGsmLogBroadcast
 import org.luckypray.dexkit.DexKitBridge
 import java.util.Timer
 import java.util.TimerTask

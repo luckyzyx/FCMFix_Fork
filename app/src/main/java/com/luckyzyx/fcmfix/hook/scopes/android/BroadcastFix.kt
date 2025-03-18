@@ -1,4 +1,4 @@
-package com.kooritea.fcmfix.hook.scopes.android
+package com.luckyzyx.fcmfix.hook.scopes.android
 
 import android.content.Context
 import android.content.Intent
@@ -12,11 +12,11 @@ import com.highcapable.yukihookapi.hook.type.android.BundleClass
 import com.highcapable.yukihookapi.hook.type.android.IntentClass
 import com.highcapable.yukihookapi.hook.type.java.IntType
 import com.highcapable.yukihookapi.hook.type.java.StringArrayClass
-import com.kooritea.fcmfix.hook.HookUtils.isAllowPackage
-import com.kooritea.fcmfix.hook.HookUtils.isFCMIntent
-import com.kooritea.fcmfix.hook.HookUtils.sendGsmLogBroadcast
-import com.kooritea.fcmfix.hook.IceboxUtils.activeApp
-import com.kooritea.fcmfix.hook.IceboxUtils.isAppEnabled
+import com.luckyzyx.fcmfix.hook.HookUtils.isAllowPackage
+import com.luckyzyx.fcmfix.hook.HookUtils.isFCMIntent
+import com.luckyzyx.fcmfix.hook.HookUtils.sendGsmLogBroadcast
+import com.luckyzyx.fcmfix.hook.IceboxUtils.activeApp
+import com.luckyzyx.fcmfix.hook.IceboxUtils.isAppEnabled
 
 object BroadcastFix : YukiBaseHooker() {
 
