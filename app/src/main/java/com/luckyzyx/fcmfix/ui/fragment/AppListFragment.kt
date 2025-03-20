@@ -35,7 +35,6 @@ import com.luckyzyx.fcmfix.data.AppInfo
 import com.luckyzyx.fcmfix.databinding.FragmentListBinding
 import com.luckyzyx.fcmfix.databinding.LayoutAppinfoSwitchItemBinding
 import com.luckyzyx.fcmfix.hook.IceboxUtils
-import com.luckyzyx.fcmfix.utils.SPUtils.getBoolean
 import com.luckyzyx.fcmfix.utils.SPUtils.getStringSet
 import com.luckyzyx.fcmfix.utils.SPUtils.putStringSet
 import me.zhanghai.android.fastscroll.FastScrollerBuilder
@@ -47,9 +46,6 @@ class AppListFragment : Fragment(), MenuProvider {
 
     private var allAppInfo = ArrayList<AppInfo>()
     private var enabledList = ArraySet<String>()
-
-    private var disableAutoCleanNotification = false
-    private var includeIceBoxDisableApp = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -110,24 +106,11 @@ class AppListFragment : Fragment(), MenuProvider {
         }
     }
 
-    private fun loadAllowData() {
-        try {
-            enabledList.clear()
-            enabledList.addAll(requireActivity().getStringSet("config", "allowList", ArraySet()))
-            disableAutoCleanNotification =
-                requireActivity().getBoolean("config", "disableAutoCleanNotification", false)
-            includeIceBoxDisableApp =
-                requireActivity().getBoolean("config", "includeIceBoxDisableApp", false)
-        } catch (e: Throwable) {
-            Log.e("loadAllowData", e.toString())
-        }
-    }
-
     private fun loadData() {
-        loadAllowData()
-
         scopeLife {
             allAppInfo.clear()
+            enabledList.clear()
+            enabledList.addAll(requireActivity().getStringSet("config", "allowList", ArraySet()))
 
             binding.swipeRefreshLayout.isRefreshing = true
             binding.searchViewLayout.isEnabled = false
@@ -208,7 +191,7 @@ class AppListFragment : Fragment(), MenuProvider {
 
     override fun onResume() {
         super.onResume()
-        loadData()
+        if (allAppInfo.isEmpty()) loadData()
     }
 
     inner class AppInfoAdapter : RecyclerView.Adapter<ViewHolder>() {
