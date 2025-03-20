@@ -1,6 +1,5 @@
 package com.luckyzyx.fcmfix.hook.scopes.gms
 
-import android.R
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -61,8 +60,9 @@ object BroadcastNotify : YukiBaseHooker() {
                                     context.getSystemService(NotificationManager::class.java)
                                 createFcmfixChannel(notificationManager)
                                 val notification = Notification.Builder(context, "fcmfix").apply {
-                                    setSmallIcon(R.drawable.ic_dialog_info)
+                                    setSmallIcon(android.R.drawable.ic_dialog_info)
                                     setContentTitle("[FCMFix] $appName")
+                                    setContentText("[FCMFix] $packName")
                                     getAppIcon(context, packName)?.let { setLargeIcon(it) }
                                     setContentIntent(pendingIntent)
                                     setAutoCancel(true)

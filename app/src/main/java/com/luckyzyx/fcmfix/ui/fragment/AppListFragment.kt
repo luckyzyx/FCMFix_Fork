@@ -27,6 +27,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.drake.net.utils.scopeLife
+import com.drake.net.utils.withDefault
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.luckyzyx.fcmfix.BuildConfig
 import com.luckyzyx.fcmfix.R
@@ -132,17 +133,19 @@ class AppListFragment : Fragment(), MenuProvider {
             binding.searchViewLayout.isEnabled = false
             binding.searchView.text = null
 
-            com.drake.net.utils.withDefault {
+            withDefault {
                 val allowAndFcm = ArrayList<AppInfo>()
                 val onlyAllow = ArrayList<AppInfo>()
                 val onlyFcm = ArrayList<AppInfo>()
                 val noFcmNoAllow = ArrayList<AppInfo>()
 
-                requireActivity().packageManager.getInstalledPackages(
+                val pm = requireActivity().packageManager
+
+                pm.getInstalledPackages(
                     PackageManager.GET_RECEIVERS or PackageManager.MATCH_DISABLED_COMPONENTS
                             or PackageManager.MATCH_UNINSTALLED_PACKAGES
                 ).forEachIndexed { _, packageInfo ->
-                    val appInfo = AppInfo(requireActivity().packageManager, packageInfo)
+                    val appInfo = AppInfo(pm, packageInfo)
                     val isAllow = enabledList.contains(appInfo.packageName)
                     val hasFcm = packageInfo.receivers?.any {
                         it.name == "com.google.firebase.iid.FirebaseInstanceIdReceiver"
