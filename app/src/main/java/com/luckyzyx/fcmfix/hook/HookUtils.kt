@@ -2,10 +2,13 @@ package com.luckyzyx.fcmfix.hook
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import androidx.core.app.NotificationCompat
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import androidx.core.graphics.createBitmap
 import com.highcapable.yukihookapi.hook.log.YLog
 import com.luckyzyx.fcmfix.BuildConfig
 import java.io.File
@@ -16,35 +19,29 @@ object HookUtils {
         return list.contains(packName) || packName == BuildConfig.APPLICATION_ID
     }
 
-    private fun createFcmfixChannel(notificationManager: NotificationManager) {
+    fun createFcmfixChannel(notificationManager: NotificationManager) {
         if (notificationManager.getNotificationChannel("fcmfix") == null) {
             val channel = NotificationChannel(
-                "fcmfix", "FCMFix", NotificationManager.IMPORTANCE_HIGH
+                "fcmfix", "FCMFix", NotificationManager.IMPORTANCE_DEFAULT
             )
             notificationManager.createNotificationChannel(channel)
         }
     }
 
-    fun sendNotification(
-        context: Context, title: CharSequence, content: CharSequence, pendingIntent: PendingIntent?
-    ) {
-        val notificationManager = context.getSystemService(NotificationManager::class.java)
-        createFcmfixChannel(notificationManager)
-        val notification = NotificationCompat.Builder(context, "fcmfix").apply {
-            setSmallIcon(android.R.drawable.ic_dialog_info)
-            if (title.isBlank()) {
-                setContentTitle("[FCMFix] $content")
-                setContentText("")
+    fun getAppIcon(context: Context, packageName: String): Bitmap? {
+        try {
+            val drawable = context.packageManager.getApplicationIcon(packageName)
+            return if (drawable is BitmapDrawable) {
+                drawable.bitmap
             } else {
-                setContentTitle("[FCMFix] $title")
-                setContentText("[FCMFix] $content")
+                val bitmap = createBitmap(drawable.intrinsicWidth, drawable.intrinsicHeight)
+                drawable.setBounds(0, 0, bitmap.width, bitmap.height)
+                drawable.draw(Canvas(bitmap))
+                bitmap
             }
-            priority = NotificationCompat.PRIORITY_DEFAULT
-            if (pendingIntent != null) {
-                setContentIntent(pendingIntent).setAutoCancel(true)
-            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            return null
         }
-        notificationManager.notify(System.currentTimeMillis().toInt(), notification.build())
     }
 
     fun Context.sendGsmLogBroadcast(text: String, throwable: Throwable? = null) {

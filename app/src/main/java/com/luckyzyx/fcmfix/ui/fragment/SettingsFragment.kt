@@ -47,6 +47,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 setDefaultValue(false)
                 isIconSpaceReserved = false
             })
+            addPreference(SwitchPreference(context).apply {
+                title = "目标无响应时代发提示通知"
+                key = "noResponseNotification"
+                setDefaultValue(false)
+                isIconSpaceReserved = false
+            })
             addPreference(Preference(context).apply {
                 title = "打开FCM Diagnostics"
                 key = "open_fcm_diagnostics"

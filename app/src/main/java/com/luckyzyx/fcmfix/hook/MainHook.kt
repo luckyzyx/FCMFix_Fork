@@ -82,7 +82,9 @@ object MainHook : IYukiHookXposedInit {
             gsmCallback = {
                 prefs.reload()
                 val allowList = prefs.getStringSet("allowList", ArraySet()) ?: ArraySet()
+                val noRN = prefs("config").getBoolean("noResponseNotification", false)
                 BroadcastNotify.callback?.invoke("allowList", allowList)
+                BroadcastNotify.callback?.invoke("noResponseNotification", noRN)
             }
         }
     }

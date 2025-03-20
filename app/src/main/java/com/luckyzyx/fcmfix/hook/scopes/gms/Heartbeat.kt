@@ -126,7 +126,7 @@ object Heartbeat : YukiBaseHooker() {
                                 override fun run() {
                                     val nextTime = field { name = maxLongField.name }
                                         .get(instance).long()
-                                    if (nextTime != 0L && nextTime - SystemClock.elapsedRealtime() > 0) {
+                                    if (nextTime != 0L && nextTime - SystemClock.elapsedRealtime() < -60000) {
                                         context.sendBroadcast(Intent("com.google.android.intent.action.GCM_RECONNECT"))
                                         context.sendGsmLogBroadcast("Send timer broadcast GCM_RECONNECT")
                                     }

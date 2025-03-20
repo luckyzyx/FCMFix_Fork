@@ -1,5 +1,8 @@
 package com.luckyzyx.fcmfix.hook.scopes.gms
 
+import android.R
+import android.app.Notification
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -9,9 +12,11 @@ import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.factory.method
 import com.highcapable.yukihookapi.hook.type.android.ContextClass
 import com.highcapable.yukihookapi.hook.type.android.IntentClass
+import com.luckyzyx.fcmfix.hook.HookUtils.createFcmfixChannel
+import com.luckyzyx.fcmfix.hook.HookUtils.getAppIcon
 import com.luckyzyx.fcmfix.hook.HookUtils.isAllowPackage
 import com.luckyzyx.fcmfix.hook.HookUtils.sendGsmLogBroadcast
-import com.luckyzyx.fcmfix.hook.HookUtils.sendNotification
+import com.luckyzyx.fcmfix.utils.safeOf
 
 object BroadcastNotify : YukiBaseHooker() {
 
@@ -19,11 +24,13 @@ object BroadcastNotify : YukiBaseHooker() {
 
     override fun onHook() {
         var allowList = prefs("config").getStringSet("allowList", ArraySet())
+        var noRN = prefs("config").getBoolean("noResponseNotification", false)
 
         @Suppress("UNCHECKED_CAST")
         callback = { key: String, value: Any ->
             when (key) {
                 "allowList" -> allowList = value as Set<String>
+                "noResponseNotification" -> noRN = value as Boolean
             }
         }
 
@@ -33,26 +40,36 @@ object BroadcastNotify : YukiBaseHooker() {
                 before {
                     val ins = instance<BroadcastReceiver>()
                     val context = args().first().cast<Context>() ?: return@before
+                    val pm = context.packageManager
                     val intent = args().last().cast<Intent>() ?: return@before
                     val resultCode = ins.resultCode
                     val packName = intent.getPackage() ?: return@before
-                    if (resultCode != -1 && isAllowPackage(allowList, packName)) {
+                    if (resultCode != -1 && noRN && isAllowPackage(allowList, packName)) {
                         try {
-                            val notifyIntent =
-                                context.packageManager.getLaunchIntentForPackage(packName)
+                            val notifyIntent = pm.getLaunchIntentForPackage(packName)
                             if (notifyIntent != null) {
                                 notifyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 val pendingIntent = PendingIntent.getActivity(
                                     context, 0, notifyIntent,
                                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                                 )
-                                val appName = try {
-                                    context.packageManager.getApplicationInfo(packName, 0)
+                                val appName = safeOf("") {
+                                    pm.getApplicationInfo(packName, 0)
                                         .loadLabel(context.packageManager)
-                                } catch (t: Throwable) {
-                                    ""
                                 }
-                                sendNotification(context, appName, packName, pendingIntent)
+                                val notificationManager =
+                                    context.getSystemService(NotificationManager::class.java)
+                                createFcmfixChannel(notificationManager)
+                                val notification = Notification.Builder(context, "fcmfix").apply {
+                                    setSmallIcon(R.drawable.ic_dialog_info)
+                                    setContentTitle("[FCMFix] $appName")
+                                    getAppIcon(context, packName)?.let { setLargeIcon(it) }
+                                    setContentIntent(pendingIntent)
+                                    setAutoCancel(true)
+                                }
+                                notificationManager.notify(
+                                    System.currentTimeMillis().toInt(), notification.build()
+                                )
                                 context.sendGsmLogBroadcast("$packName Send FCM Notification")
                             } else {
                                 context.sendGsmLogBroadcast("$packName Target App Launch Intent Error")
