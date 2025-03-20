@@ -36,8 +36,9 @@ object AutoStartFix : YukiBaseHooker() {
                     val ams = field {
                         type = "com.android.server.am.ActivityManagerService"
                     }.get(instance).any() ?: return@after
-                    val context = ams.current().field { name = "mContext" }.cast<Context>()
-                        ?: return@after
+                    val context = ams.current().field {
+                        name = "mContext";superClass()
+                    }.cast<Context>() ?: return@after
                     val intent = args(args.indexOf(IntentClass)).cast<Intent>()
                         ?: return@after
                     val resolveInfo = args(args.indexOf(ResolveInfoClass)).cast<ResolveInfo>()

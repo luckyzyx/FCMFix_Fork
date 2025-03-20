@@ -95,7 +95,7 @@ object BroadcastFix : YukiBaseHooker() {
                                                 "[$packName] Wait IceBox active time out"
                                             )
                                         }
-                                        invokeOriginal(*args)
+                                        result = invokeOriginal(*args)
                                     } catch (e: Exception) {
                                         context.sendGsmLogBroadcast(
                                             "[$packName] Send Forced Start Broadcast Error",

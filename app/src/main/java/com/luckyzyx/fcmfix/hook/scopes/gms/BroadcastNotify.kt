@@ -1,6 +1,5 @@
 package com.luckyzyx.fcmfix.hook.scopes.gms
 
-import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -18,7 +17,6 @@ object BroadcastNotify : YukiBaseHooker() {
 
     var callback: ((key: String, value: Any) -> Unit)? = null
 
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onHook() {
         var allowList = prefs("config").getStringSet("allowList", ArraySet())
 
