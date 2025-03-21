@@ -1,11 +1,8 @@
 package com.luckyzyx.fcmfix.hook.scopes.android
 
-import android.service.notification.NotificationListenerService
 import android.util.ArraySet
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.factory.method
-import com.highcapable.yukihookapi.hook.type.java.IntType
-import com.highcapable.yukihookapi.hook.type.java.StringClass
 import com.luckyzyx.fcmfix.hook.HookUtils.isAllowPackage
 
 object KeepNotification : YukiBaseHooker() {
@@ -24,21 +21,15 @@ object KeepNotification : YukiBaseHooker() {
             }
         }
 
-        //Source NotificationManagerService
-        "com.android.server.notification.NotificationManagerService".toClass().apply {
-            method { name = "cancelAllNotificationsInt" }.hook {
+        //Source NotificationManagerService -> cancelAllNotificationsInt
+        //Source OplusNotificationManagerServiceExtImpl -> shouldKeepNotifcationWhenForceStop
+        //Source OplusNotificationCommonPolicy -> shouldKeepNotifcationWhenForceStop
+        "com.android.server.notification.OplusNotificationManagerServiceExtImpl".toClass().apply {
+            method { name = "shouldKeepNotifcationWhenForceStop" }.hook {
                 before {
-                    val packName = args(args.indexOfFirst { it == StringClass }).cast<String>()
-                        ?: return@before
-                    val reason = args(args.indexOfLast { it == IntType }).cast<Int>()
-                        ?: return@before
+                    val packName = args().first().string()
                     if (disableACN && isAllowPackage(allowList, packName)) {
-                        if (reason == NotificationListenerService.REASON_PACKAGE_CHANGED) {
-                            resultNull()
-                        }
-                        if (reason == 10020) { // cos15/oos15
-                            resultNull()
-                        }
+                        resultTrue()
                     }
                 }
             }
