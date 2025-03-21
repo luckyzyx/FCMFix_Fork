@@ -71,6 +71,8 @@ class AppListFragment : Fragment(), MenuProvider {
         }
 
         requestIceBox()
+
+        loadData()
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -187,11 +189,6 @@ class AppListFragment : Fragment(), MenuProvider {
         } catch (e: Exception) {
             Log.e("updateConfig", e.toString())
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (allAppInfo.isEmpty()) loadData()
     }
 
     inner class AppInfoAdapter : RecyclerView.Adapter<ViewHolder>() {

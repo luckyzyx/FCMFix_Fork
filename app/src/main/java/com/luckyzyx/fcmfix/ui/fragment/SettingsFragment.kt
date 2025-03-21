@@ -40,18 +40,30 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 key = "disableAutoCleanNotification"
                 setDefaultValue(false)
                 isIconSpaceReserved = false
+                setOnPreferenceChangeListener { _, _ ->
+                    context.sendBroadcast(Intent("${BuildConfig.APPLICATION_ID}.update.config"))
+                    true
+                }
             })
             addPreference(SwitchPreference(context).apply {
                 title = "允许唤醒被冰箱冻结的应用"
                 key = "includeIceBoxDisableApp"
                 setDefaultValue(false)
                 isIconSpaceReserved = false
+                setOnPreferenceChangeListener { _, _ ->
+                    context.sendBroadcast(Intent("${BuildConfig.APPLICATION_ID}.update.config"))
+                    true
+                }
             })
             addPreference(SwitchPreference(context).apply {
                 title = "目标无响应时代发提示通知"
                 key = "noResponseNotification"
                 setDefaultValue(false)
                 isIconSpaceReserved = false
+                setOnPreferenceChangeListener { _, _ ->
+                    context.sendBroadcast(Intent("${BuildConfig.APPLICATION_ID}.update.config"))
+                    true
+                }
             })
             addPreference(Preference(context).apply {
                 title = "打开FCM Diagnostics"
