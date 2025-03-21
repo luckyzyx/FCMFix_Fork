@@ -17,19 +17,18 @@ class SettingsFragment : PreferenceFragmentCompat() {
             addPreference(SwitchPreference(context).apply {
                 title = "隐藏启动器图标"
                 key = "hide_launcher_icon"
+                val componentName =
+                    ComponentName(BuildConfig.APPLICATION_ID, "${BuildConfig.APPLICATION_ID}.Home")
                 isChecked = context.packageManager.getComponentEnabledSetting(
-                    ComponentName(context.packageName, "${BuildConfig.APPLICATION_ID}.Home")
+                    componentName
                 ) == PackageManager.COMPONENT_ENABLED_STATE_DISABLED
                 isPersistent = false
                 isIconSpaceReserved = false
                 setOnPreferenceChangeListener { _, isChecked ->
                     context.packageManager.setComponentEnabledSetting(
-                        ComponentName(
-                            BuildConfig.APPLICATION_ID,
-                            "${BuildConfig.APPLICATION_ID}.Home"
-                        ),
-                        if (isChecked as Boolean) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                        else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                        componentName,
+                        if (isChecked as Boolean) PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                        else PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                         PackageManager.DONT_KILL_APP
                     )
                     true
