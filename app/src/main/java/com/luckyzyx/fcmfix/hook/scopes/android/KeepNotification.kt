@@ -28,8 +28,9 @@ object KeepNotification : YukiBaseHooker() {
             method { name = "shouldKeepNotifcationWhenForceStop" }.hook {
                 before {
                     val packName = args().first().string()
+                    val reason = args().last().int()
                     if (disableACN && isAllowPackage(allowList, packName)) {
-                        resultTrue()
+                        if (reason == 10020 || reason == 10021) resultTrue()
                     }
                 }
             }
