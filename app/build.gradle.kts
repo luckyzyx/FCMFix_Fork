@@ -1,7 +1,10 @@
 import java.io.FileInputStream
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Properties
 
 val isBuildCI = gradle.startParameter.taskNames.any { it == "buildCI" }
+val buildTime: String = SimpleDateFormat("yyMMddHHmm").format(Date())
 
 plugins {
     alias(libs.plugins.agp.app)
@@ -18,8 +21,8 @@ android {
         minSdk = 29
         //noinspection ExpiredTargetSdkVersion
         targetSdk = 28
+        versionName = if (isBuildCI) "CI-${buildTime}" else "dev"
         versionCode = getVersionCode()
-        versionName = if (isBuildCI) "ci" else "dev"
         ndk.abiFilters.add("arm64-v8a")
     }
 
