@@ -1,23 +1,23 @@
-package com.luckyzyx.fcmfix.hook.scopes.gms
+package com.luckyzyx.fcmfix.hook.scopes.android
 
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.ArraySet
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
+import com.highcapable.yukihookapi.hook.factory.current
+import com.highcapable.yukihookapi.hook.factory.field
 import com.highcapable.yukihookapi.hook.factory.method
+import com.highcapable.yukihookapi.hook.log.YLog
 import com.highcapable.yukihookapi.hook.type.android.ContextClass
-import com.highcapable.yukihookapi.hook.type.android.IntentClass
 import com.luckyzyx.fcmfix.hook.HookUtils.createFcmfixChannel
 import com.luckyzyx.fcmfix.hook.HookUtils.getAppIcon
 import com.luckyzyx.fcmfix.hook.HookUtils.isAllowPackage
-import com.luckyzyx.fcmfix.hook.HookUtils.sendGsmLogBroadcast
 import com.luckyzyx.fcmfix.utils.safeOf
 
-object BroadcastNotify : YukiBaseHooker() {
+object BroadcastNotification : YukiBaseHooker() {
 
     var callback: ((key: String, value: Any) -> Unit)? = null
 
@@ -26,24 +26,29 @@ object BroadcastNotify : YukiBaseHooker() {
         var noRN = prefs("config").getBoolean("noResponseNotification", false)
 
         @Suppress("UNCHECKED_CAST")
-        callback = { key: String, value: Any ->
+        KeepNotification.callback = { key: String, value: Any ->
             when (key) {
                 "allowList" -> allowList = value as Set<String>
                 "noResponseNotification" -> noRN = value as Boolean
             }
         }
 
-        //Source DataMessageManager -> BroadcastDoneReceiver
-        "com.google.android.gms.gcm.DataMessageManager\$BroadcastDoneReceiver".toClass().apply {
-            method { param(ContextClass, IntentClass) }.hook {
+        //Source BroadcastQueueModernImpl
+        "com.android.server.am.BroadcastQueueModernImpl".toClass().apply {
+            method { name = "scheduleResultTo" }.hook {
                 before {
-                    val ins = instance<BroadcastReceiver>()
-                    val context = args().first().cast<Context>() ?: return@before
+                    val ams = field {
+                        type = "com.android.server.am.ActivityManagerService";superClass()
+                    }.get(instance).any() ?: return@before
+                    val context = ams.current().field { type = ContextClass }.cast<Context>()
+                        ?: return@before
                     val pm = context.packageManager
-                    val intent = args().last().cast<Intent>() ?: return@before
-                    val resultCode = ins.resultCode
-                    val packName = intent.getPackage() ?: return@before
-                    if (resultCode != -1 && noRN && isAllowPackage(allowList, packName)) {
+                    val broadcastRecord = args().first().any() ?: return@before
+                    val intent = broadcastRecord.current().field { name = "intent" }
+                        .cast<Intent>() ?: return@before
+                    val resultCode = broadcastRecord.current().field { name = "resultCode" }.int()
+                    val packName = intent.`package` ?: return@before
+                    if (noRN && resultCode != -1 && isAllowPackage(allowList, packName)) {
                         try {
                             val notifyIntent = pm.getLaunchIntentForPackage(packName)
                             if (notifyIntent != null) {
@@ -70,12 +75,12 @@ object BroadcastNotify : YukiBaseHooker() {
                                 notificationManager.notify(
                                     System.currentTimeMillis().toInt(), notification.build()
                                 )
-                                context.sendGsmLogBroadcast("$packName Send FCM Notification")
+                                YLog.debug("$packName Send FCM Notification")
                             } else {
-                                context.sendGsmLogBroadcast("$packName Target App Launch Intent Error")
+                                YLog.debug("$packName Target App Launch Intent Error")
                             }
                         } catch (e: Exception) {
-                            context.sendGsmLogBroadcast("GSM Send Notification Error", e)
+                            YLog.error(e.message.toString(), throwable)
                         }
                     }
                 }

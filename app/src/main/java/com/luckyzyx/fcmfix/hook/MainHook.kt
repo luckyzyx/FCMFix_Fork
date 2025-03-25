@@ -17,9 +17,9 @@ import com.luckyzyx.fcmfix.BuildConfig
 import com.luckyzyx.fcmfix.hook.HookUtils.fileIsExists
 import com.luckyzyx.fcmfix.hook.scopes.android.AutoStartFix
 import com.luckyzyx.fcmfix.hook.scopes.android.BroadcastFix
+import com.luckyzyx.fcmfix.hook.scopes.android.BroadcastNotification
 import com.luckyzyx.fcmfix.hook.scopes.android.KeepNotification
 import com.luckyzyx.fcmfix.hook.scopes.gms.AddButton
-import com.luckyzyx.fcmfix.hook.scopes.gms.BroadcastNotify
 import com.luckyzyx.fcmfix.hook.scopes.gms.Heartbeat
 import com.luckyzyx.fcmfix.hook.scopes.gms.RegisterLogReceiver
 import de.robv.android.xposed.XSharedPreferences
@@ -57,17 +57,22 @@ object MainHook : IYukiHookXposedInit {
             loadHooker(BroadcastFix)
             loadHooker(AutoStartFix)
             loadHooker(KeepNotification)
+            loadHooker(BroadcastNotification)
 
             sysyemCallback = {
                 prefs.reload()
                 val allowList = prefs.getStringSet("allowList", ArraySet()) ?: ArraySet()
                 val disableACN = prefs.getBoolean("disableAutoCleanNotification", false)
                 val includeIBDA = prefs.getBoolean("includeIceBoxDisableApp", false)
+                val noRN = prefs("config").getBoolean("noResponseNotification", false)
                 BroadcastFix.callback?.invoke("allowList", allowList)
                 AutoStartFix.callback?.invoke("allowList", allowList)
                 KeepNotification.callback?.invoke("allowList", allowList)
-                KeepNotification.callback?.invoke("disableAutoCleanNotification", disableACN)
+                BroadcastNotification.callback?.invoke("allowList", allowList)
+
                 BroadcastFix.callback?.invoke("includeIceBoxDisableApp", includeIBDA)
+                KeepNotification.callback?.invoke("disableAutoCleanNotification", disableACN)
+                BroadcastNotification.callback?.invoke("noResponseNotification", noRN)
             }
         }
 
@@ -76,16 +81,16 @@ object MainHook : IYukiHookXposedInit {
 
             loadHooker(AddButton)
             loadHooker(RegisterLogReceiver)
-            loadHooker(BroadcastNotify)
+//            loadHooker(BroadcastNotify)
             loadHooker(Heartbeat)
 
-            gsmCallback = {
-                prefs.reload()
-                val allowList = prefs.getStringSet("allowList", ArraySet()) ?: ArraySet()
-                val noRN = prefs("config").getBoolean("noResponseNotification", false)
-                BroadcastNotify.callback?.invoke("allowList", allowList)
-                BroadcastNotify.callback?.invoke("noResponseNotification", noRN)
-            }
+//            gsmCallback = {
+//                prefs.reload()
+//                val allowList = prefs.getStringSet("allowList", ArraySet()) ?: ArraySet()
+//                val noRN = prefs("config").getBoolean("noResponseNotification", false)
+//                BroadcastNotify.callback?.invoke("allowList", allowList)
+//                BroadcastNotify.callback?.invoke("noResponseNotification", noRN)
+//            }
         }
     }
 
