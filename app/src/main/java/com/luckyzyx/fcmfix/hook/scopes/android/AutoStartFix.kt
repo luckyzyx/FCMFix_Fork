@@ -16,6 +16,7 @@ import com.luckyzyx.fcmfix.hook.HookUtils.sendGsmLogBroadcast
 object AutoStartFix : YukiBaseHooker() {
 
     var callback: ((key: String, value: Any) -> Unit)? = null
+    var isBootComplete = false
 
     override fun onHook() {
         var allowList = prefs("config").getStringSet("allowList", ArraySet())
@@ -31,6 +32,7 @@ object AutoStartFix : YukiBaseHooker() {
         "com.android.server.am.OplusAppStartupManager".toClassOrNull()?.apply {
             method { name = "isAllowStartFromBroadCast";returnType = BooleanType }.hookAll {
                 after {
+                    if (!isBootComplete) return@after
                     val ams = field {
                         type = "com.android.server.am.ActivityManagerService"
                     }.get(instance).any() ?: return@after

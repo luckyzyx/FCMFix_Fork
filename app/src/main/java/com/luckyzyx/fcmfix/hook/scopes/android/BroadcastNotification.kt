@@ -20,6 +20,7 @@ import com.luckyzyx.fcmfix.utils.safeOf
 object BroadcastNotification : YukiBaseHooker() {
 
     var callback: ((key: String, value: Any) -> Unit)? = null
+    var isBootComplete = false
 
     override fun onHook() {
         var allowList = prefs("config").getStringSet("allowList", ArraySet())
@@ -37,6 +38,7 @@ object BroadcastNotification : YukiBaseHooker() {
         "com.android.server.am.BroadcastQueueModernImpl".toClass().apply {
             method { name = "scheduleResultTo" }.hook {
                 before {
+                    if (!isBootComplete) return@before
                     val ams = field {
                         type = "com.android.server.am.ActivityManagerService";superClass()
                     }.get(instance).any() ?: return@before

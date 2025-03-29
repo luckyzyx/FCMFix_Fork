@@ -38,6 +38,8 @@ object MainHook : IYukiHookXposedInit {
         }
     }
 
+    var bootCompleteCallback: (() -> Unit)? = null
+
     var sysyemCallback: (() -> Unit)? = null
     var gsmCallback: (() -> Unit)? = null
 
@@ -52,6 +54,7 @@ object MainHook : IYukiHookXposedInit {
         }
 
         loadSystem {
+            loadHooker(RegisterBootComplete)
             loadHooker(RegisterConfigUpdate)
 
             loadHooker(BroadcastFix)
@@ -59,12 +62,21 @@ object MainHook : IYukiHookXposedInit {
             loadHooker(KeepNotification)
             loadHooker(BroadcastNotification)
 
+            bootCompleteCallback = {
+                BroadcastFix.isBootComplete = true
+                AutoStartFix.isBootComplete = true
+                KeepNotification.isBootComplete = true
+                BroadcastNotification.isBootComplete = true
+
+                YLog.debug("System is BootComplete")
+            }
+
             sysyemCallback = {
                 prefs.reload()
                 val allowList = prefs.getStringSet("allowList", ArraySet()) ?: ArraySet()
                 val disableACN = prefs.getBoolean("disableAutoCleanNotification", false)
                 val includeIBDA = prefs.getBoolean("includeIceBoxDisableApp", false)
-                val noRN = prefs("config").getBoolean("noResponseNotification", false)
+                val noRN = prefs.getBoolean("noResponseNotification", false)
                 BroadcastFix.callback?.invoke("allowList", allowList)
                 AutoStartFix.callback?.invoke("allowList", allowList)
                 KeepNotification.callback?.invoke("allowList", allowList)
@@ -73,6 +85,8 @@ object MainHook : IYukiHookXposedInit {
                 BroadcastFix.callback?.invoke("includeIceBoxDisableApp", includeIBDA)
                 KeepNotification.callback?.invoke("disableAutoCleanNotification", disableACN)
                 BroadcastNotification.callback?.invoke("noResponseNotification", noRN)
+
+                YLog.debug("Update system config success")
             }
         }
 
@@ -84,13 +98,15 @@ object MainHook : IYukiHookXposedInit {
 //            loadHooker(BroadcastNotify)
             loadHooker(Heartbeat)
 
-//            gsmCallback = {
+            gsmCallback = {
 //                prefs.reload()
 //                val allowList = prefs.getStringSet("allowList", ArraySet()) ?: ArraySet()
 //                val noRN = prefs("config").getBoolean("noResponseNotification", false)
 //                BroadcastNotify.callback?.invoke("allowList", allowList)
 //                BroadcastNotify.callback?.invoke("noResponseNotification", noRN)
-//            }
+
+                YLog.debug("Update gms config success")
+            }
         }
     }
 
@@ -105,10 +121,9 @@ object MainHook : IYukiHookXposedInit {
                             object : BroadcastReceiver() {
                                 override fun onReceive(context: Context?, intent: Intent?) {
                                     val action = intent?.action ?: return
-                                    if (action == "${BuildConfig.APPLICATION_ID}.update.config") {
-                                        sysyemCallback?.invoke()
-                                        gsmCallback?.invoke()
-                                    }
+                                    if (action != "${BuildConfig.APPLICATION_ID}.update.config") return
+                                    sysyemCallback?.invoke()
+                                    gsmCallback?.invoke()
                                 }
                             }, intentFilter, Context.RECEIVER_EXPORTED
                         )
@@ -117,10 +132,41 @@ object MainHook : IYukiHookXposedInit {
                             object : BroadcastReceiver() {
                                 override fun onReceive(context: Context?, intent: Intent?) {
                                     val action = intent?.action ?: return
-                                    if (action == "${BuildConfig.APPLICATION_ID}.update.config") {
-                                        sysyemCallback?.invoke()
-                                        gsmCallback?.invoke()
-                                    }
+                                    if (action != "${BuildConfig.APPLICATION_ID}.update.config") return
+                                    sysyemCallback?.invoke()
+                                    gsmCallback?.invoke()
+                                }
+                            }, intentFilter
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    object RegisterBootComplete : YukiBaseHooker() {
+        @SuppressLint("UnspecifiedRegisterReceiverFlag")
+        override fun onHook() {
+            onAppLifecycle {
+                attachBaseContext { baseContext, _ ->
+                    val intentFilter = IntentFilter(Intent.ACTION_BOOT_COMPLETED)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        baseContext.registerReceiver(
+                            object : BroadcastReceiver() {
+                                override fun onReceive(context: Context?, intent: Intent?) {
+                                    val action = intent?.action ?: return
+                                    if (action != Intent.ACTION_BOOT_COMPLETED) return
+                                    bootCompleteCallback?.invoke()
+                                }
+                            }, intentFilter, Context.RECEIVER_EXPORTED
+                        )
+                    } else {
+                        baseContext.registerReceiver(
+                            object : BroadcastReceiver() {
+                                override fun onReceive(context: Context?, intent: Intent?) {
+                                    val action = intent?.action ?: return
+                                    if (action != Intent.ACTION_BOOT_COMPLETED) return
+                                    bootCompleteCallback?.invoke()
                                 }
                             }, intentFilter
                         )

@@ -21,6 +21,7 @@ import com.luckyzyx.fcmfix.hook.IceboxUtils.isAppEnabled
 object BroadcastFix : YukiBaseHooker() {
 
     var callback: ((key: String, value: Any) -> Unit)? = null
+    var isBootComplete = false
 
     override fun onHook() {
         var allowList = prefs("config").getStringSet("allowList", ArraySet())
@@ -59,6 +60,7 @@ object BroadcastFix : YukiBaseHooker() {
         clazz.apply {
             finalMethod.hook {
                 before {
+                    if (!isBootComplete) return@before
                     val context = field { name = "mContext" }.get(instance).cast<Context>()
                         ?: return@before
                     val intent = args(intentArgsIndex).cast<Intent>() ?: return@before

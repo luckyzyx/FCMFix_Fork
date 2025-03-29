@@ -8,6 +8,7 @@ import com.luckyzyx.fcmfix.hook.HookUtils.isAllowPackage
 object KeepNotification : YukiBaseHooker() {
 
     var callback: ((key: String, value: Any) -> Unit)? = null
+    var isBootComplete = false
 
     override fun onHook() {
         var allowList = prefs("config").getStringSet("allowList", ArraySet())
@@ -27,6 +28,7 @@ object KeepNotification : YukiBaseHooker() {
         "com.android.server.notification.OplusNotificationManagerServiceExtImpl".toClass().apply {
             method { name = "shouldKeepNotifcationWhenForceStop" }.hook {
                 before {
+                    if (!isBootComplete) return@before
                     val packName = args().first().string()
                     val reason = args().last().int()
                     if (disableACN && isAllowPackage(allowList, packName)) {
