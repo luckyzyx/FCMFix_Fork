@@ -142,6 +142,13 @@ public class MainActivity extends AppCompatActivity {
             _allowList.addAll(_notAllowList);
             _allowList.addAll(_notFoundFcm);
             this.mAppList = _allowList;
+            if(_allowList.size() == 0 || _allowList.isEmpty() ||(_allowList.size() == 1 && "com.kooritea.fcmfix".equals(_allowList.get(0).packageName))){
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("请在系统设置中授予读取应用列表权限")
+                        .setMessage("或直接编辑" + getApplicationContext().getFilesDir().getAbsolutePath() + "/config.json(需重启生效)")
+                        .setPositiveButton("确定", (dialog, which) -> {})
+                        .show();
+            }
         }
 
 
@@ -194,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
             if (ContextCompat.checkSelfPermission(this, IceboxUtils.SDK_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{IceboxUtils.SDK_PERMISSION}, IceboxUtils.REQUEST_CODE);
             }
-        } catch (Exception ignored) {
+        } catch (Throwable ignored) {
         }
 
         try {
@@ -264,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
                 sharedPreferencesEditor.putBoolean("noResponseNotification", this.config.getBoolean("noResponseNotification"));
                 sharedPreferencesEditor.commit();
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             Log.e("updateConfig",e.toString());
         }
         try {

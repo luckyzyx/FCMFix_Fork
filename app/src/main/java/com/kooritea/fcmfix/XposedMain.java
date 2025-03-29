@@ -1,7 +1,6 @@
 package com.kooritea.fcmfix;
 
 import android.annotation.SuppressLint;
-import android.os.Build;
 
 import com.kooritea.fcmfix.xposed.AutoStartFix;
 import com.kooritea.fcmfix.xposed.BroadcastFix;
@@ -51,7 +50,6 @@ public class XposedMain implements IXposedHookLoadPackage {
             XposedBridge.log("[fcmfix] start hook com.miui.powerkeeper");
             new PowerkeeperFix(loadPackageParam);
         }
-
     }
     private boolean fileIsExists(String strFile) {
         try {

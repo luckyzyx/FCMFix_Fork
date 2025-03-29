@@ -26,18 +26,14 @@ public class BroadcastFix extends XposedModule {
 
     public BroadcastFix(XC_LoadPackage.LoadPackageParam loadPackageParam) {
         super(loadPackageParam);
-    }
-
-    @Override
-    protected void onCanReadConfig() {
         try{
             this.startHookBroadcastIntentLocked();
-        }catch (Exception e) {
+        }catch (Throwable e) {
             printLog("hook error com.android.server.am.ActivityManagerService.broadcastIntentLocked:" + e.getMessage());
         }
         try{
             this.startHookScheduleResultTo();
-        }catch (Exception e) {
+        }catch (Throwable e) {
             printLog("hook error com.android.server.am.BroadcastQueueModernImpl.scheduleResultTo:" + e.getMessage());
         }
     }
@@ -152,6 +148,9 @@ public class BroadcastFix extends XposedModule {
             XposedBridge.hookMethod(targetMethod,new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam methodHookParam) {
+                    if(!isBootComplete){
+                        return;
+                    }
                     Intent intent = (Intent) methodHookParam.args[finalIntent_args_index];
                     if(intent != null && intent.getPackage() != null && intent.getFlags() != Intent.FLAG_INCLUDE_STOPPED_PACKAGES && isFCMIntent(intent)){
                         String target;
@@ -175,7 +174,7 @@ public class BroadcastFix extends XposedModule {
                                         if (!IceboxUtils.isAppEnabled(context, target)) {
                                             try {
                                                 Thread.sleep(100);
-                                            } catch (Exception e) {
+                                            } catch (Throwable e) {
                                                 printLog("Send Forced Start Broadcast Error: " + target + " " + e.getMessage(), true);
                                             }
                                         } else {
@@ -189,7 +188,7 @@ public class BroadcastFix extends XposedModule {
                                             printLog("Waiting for IceBox to activate the app timed out: " + target, true);
                                         }
                                         XposedBridge.invokeOriginalMethod(methodHookParam.method, methodHookParam.thisObject, methodHookParam.args);
-                                    } catch (Exception e) {
+                                    } catch (Throwable e) {
                                         printLog("Send Forced Start Broadcast Error: " + target + " " + e.getMessage(), true);
                                     }
                                 }).start();
@@ -210,6 +209,12 @@ public class BroadcastFix extends XposedModule {
         XposedBridge.hookMethod(method,new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam methodHookParam) {
+                if(!isBootComplete){
+                    return;
+                }
+                if(methodHookParam.args[0] == null || XposedHelpers.getObjectField(methodHookParam.args[0],"resultTo") == null || XposedHelpers.getObjectField(methodHookParam.args[0],"intent") == null || XposedHelpers.getObjectField(methodHookParam.args[0],"resultCode") == null){
+                    return;
+                }
                 Intent intent = (Intent)XposedHelpers.getObjectField(methodHookParam.args[0],"intent");
                 int resultCode = (int) XposedHelpers.getObjectField(methodHookParam.args[0],"resultCode");
                 String packageName = intent.getPackage();
@@ -235,7 +240,7 @@ public class BroadcastFix extends XposedModule {
                         }else{
                             printLog("无法获取目标应用active: " + packageName,false);
                         }
-                    }catch (Exception e){
+                    }catch (Throwable e){
                         printLog(e.getMessage(),false);
                     }
                 }
@@ -259,7 +264,7 @@ public class BroadcastFix extends XposedModule {
                 drawable.draw(new android.graphics.Canvas(bitmap));
                 return bitmap;
             }
-        } catch (PackageManager.NameNotFoundException e) {
+        } catch (Throwable e) {
             return null;
         }
     }
