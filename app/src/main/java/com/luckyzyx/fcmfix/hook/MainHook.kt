@@ -22,7 +22,6 @@ import com.luckyzyx.fcmfix.hook.scopes.android.KeepNotification
 import com.luckyzyx.fcmfix.hook.scopes.gms.AddButton
 import com.luckyzyx.fcmfix.hook.scopes.gms.Heartbeat
 import com.luckyzyx.fcmfix.hook.scopes.gms.RegisterLogReceiver
-import de.robv.android.xposed.XSharedPreferences
 
 @InjectYukiHookWithXposed
 object MainHook : IYukiHookXposedInit {
@@ -40,13 +39,11 @@ object MainHook : IYukiHookXposedInit {
 
     var bootCompleteCallback: (() -> Unit)? = null
 
-    var sysyemCallback: (() -> Unit)? = null
-    var gsmCallback: (() -> Unit)? = null
+    var sysyemCallback: ((key: String?) -> Unit)? = null
+    var gsmCallback: ((key: String?) -> Unit)? = null
 
     @SuppressLint("SdCardPath")
     override fun onHook() = encase {
-
-        val prefs = XSharedPreferences(BuildConfig.APPLICATION_ID, "config")
 
         if (fileIsExists("/sdcard/disable_fcmfix")) {
             YLog.debug("/sdcard/disable_fcmfix is exists, exit")
@@ -72,20 +69,35 @@ object MainHook : IYukiHookXposedInit {
             }
 
             sysyemCallback = {
-                prefs.reload()
-                val allowList = prefs.getStringSet("allowList", ArraySet()) ?: ArraySet()
-                val disableACN = prefs.getBoolean("disableAutoCleanNotification", false)
-                val includeIBDA = prefs.getBoolean("includeIceBoxDisableApp", false)
-                val noRN = prefs.getBoolean("noResponseNotification", false)
-                BroadcastFix.callback?.invoke("allowList", allowList)
-                AutoStartFix.callback?.invoke("allowList", allowList)
-                KeepNotification.callback?.invoke("allowList", allowList)
-                BroadcastNotification.callback?.invoke("allowList", allowList)
+                when (it) {
+                    "allowList" -> {
+                        val allowList = prefs("config").getStringSet("allowList", ArraySet())
+                        BroadcastFix.callback?.invoke("allowList", allowList)
+                        AutoStartFix.callback?.invoke("allowList", allowList)
+                        KeepNotification.callback?.invoke("allowList", allowList)
+                        BroadcastNotification.callback?.invoke("allowList", allowList)
+                    }
 
-                BroadcastFix.callback?.invoke("includeIceBoxDisableApp", includeIBDA)
-                KeepNotification.callback?.invoke("disableAutoCleanNotification", disableACN)
-                BroadcastNotification.callback?.invoke("noResponseNotification", noRN)
+                    "disableAutoCleanNotification" -> {
+                        val disableACN =
+                            prefs("config").getBoolean("disableAutoCleanNotification", false)
+                        KeepNotification.callback?.invoke(
+                            "disableAutoCleanNotification",
+                            disableACN
+                        )
+                    }
 
+                    "includeIceBoxDisableApp" -> {
+                        val includeIBDA =
+                            prefs("config").getBoolean("includeIceBoxDisableApp", false)
+                        BroadcastFix.callback?.invoke("includeIceBoxDisableApp", includeIBDA)
+                    }
+
+                    "noResponseNotification" -> {
+                        val noRN = prefs("config").getBoolean("noResponseNotification", false)
+                        BroadcastNotification.callback?.invoke("noResponseNotification", noRN)
+                    }
+                }
                 YLog.debug("Update system config success")
             }
         }
@@ -99,12 +111,17 @@ object MainHook : IYukiHookXposedInit {
             loadHooker(Heartbeat)
 
             gsmCallback = {
-//                prefs.reload()
-//                val allowList = prefs.getStringSet("allowList", ArraySet()) ?: ArraySet()
-//                val noRN = prefs("config").getBoolean("noResponseNotification", false)
-//                BroadcastNotify.callback?.invoke("allowList", allowList)
-//                BroadcastNotify.callback?.invoke("noResponseNotification", noRN)
-
+//                when (it) {
+//                    "allowList" -> {
+//                        val allowList = prefs("config").getStringSet("allowList", ArraySet())
+//                        BroadcastNotify.callback?.invoke("allowList", allowList)
+//                    }
+//
+//                    "noResponseNotification" -> {
+//                        val noRN = prefs("config").getBoolean("noResponseNotification", false)
+//                        BroadcastNotify.callback?.invoke("noResponseNotification", noRN)
+//                    }
+//                }
                 YLog.debug("Update gms config success")
             }
         }
@@ -122,8 +139,9 @@ object MainHook : IYukiHookXposedInit {
                                 override fun onReceive(context: Context?, intent: Intent?) {
                                     val action = intent?.action ?: return
                                     if (action != "${BuildConfig.APPLICATION_ID}.update.config") return
-                                    sysyemCallback?.invoke()
-                                    gsmCallback?.invoke()
+                                    val key = intent.getStringExtra("key")
+                                    sysyemCallback?.invoke(key)
+                                    gsmCallback?.invoke(key)
                                 }
                             }, intentFilter, Context.RECEIVER_EXPORTED
                         )
@@ -133,8 +151,9 @@ object MainHook : IYukiHookXposedInit {
                                 override fun onReceive(context: Context?, intent: Intent?) {
                                     val action = intent?.action ?: return
                                     if (action != "${BuildConfig.APPLICATION_ID}.update.config") return
-                                    sysyemCallback?.invoke()
-                                    gsmCallback?.invoke()
+                                    val key = intent.getStringExtra("key")
+                                    sysyemCallback?.invoke(key)
+                                    gsmCallback?.invoke(key)
                                 }
                             }, intentFilter
                         )

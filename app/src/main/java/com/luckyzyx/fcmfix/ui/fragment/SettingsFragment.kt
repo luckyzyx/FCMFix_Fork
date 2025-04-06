@@ -40,7 +40,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 setDefaultValue(false)
                 isIconSpaceReserved = false
                 setOnPreferenceChangeListener { _, _ ->
-                    context.sendBroadcast(Intent("${BuildConfig.APPLICATION_ID}.update.config"))
+                    context.sendBroadcast(Intent("${BuildConfig.APPLICATION_ID}.update.config").apply {
+                        putExtra("key", key)
+                    })
                     true
                 }
             })
@@ -50,7 +52,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 setDefaultValue(false)
                 isIconSpaceReserved = false
                 setOnPreferenceChangeListener { _, _ ->
-                    context.sendBroadcast(Intent("${BuildConfig.APPLICATION_ID}.update.config"))
+                    context.sendBroadcast(Intent("${BuildConfig.APPLICATION_ID}.update.config").apply {
+                        putExtra("key", key)
+                    })
                     true
                 }
             })
@@ -60,7 +64,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 setDefaultValue(false)
                 isIconSpaceReserved = false
                 setOnPreferenceChangeListener { _, _ ->
-                    context.sendBroadcast(Intent("${BuildConfig.APPLICATION_ID}.update.config"))
+                    context.sendBroadcast(Intent("${BuildConfig.APPLICATION_ID}.update.config").apply {
+                        putExtra("key", key)
+                    })
                     true
                 }
             })

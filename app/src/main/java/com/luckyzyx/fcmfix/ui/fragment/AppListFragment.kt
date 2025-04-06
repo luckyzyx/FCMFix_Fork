@@ -185,7 +185,9 @@ class AppListFragment : Fragment(), MenuProvider {
     private fun updateConfig() {
         try {
             requireActivity().putStringSet("config", "allowList", enabledList.toSet())
-            requireActivity().sendBroadcast(Intent("${BuildConfig.APPLICATION_ID}.update.config"))
+            requireActivity().sendBroadcast(Intent("${BuildConfig.APPLICATION_ID}.update.config").apply {
+                putExtra("key", "allowList")
+            })
         } catch (e: Exception) {
             Log.e("updateConfig", e.toString())
         }
