@@ -30,25 +30,25 @@ object AutoStartFix : YukiBaseHooker() {
 
         //Source OplusAppStartupManager
         "com.android.server.am.OplusAppStartupManager".toClassOrNull()?.apply {
-            method { name = "isAllowStartFromBroadCast";returnType = BooleanType }.hookAll {
-                after {
-                    if (!isBootComplete) return@after
+            method { name = "shouldPreventSendReceiverReal";returnType = BooleanType }.hookAll {
+                before {
+                    if (!isBootComplete) return@before
                     val ams = field {
                         type = "com.android.server.am.ActivityManagerService"
-                    }.get(instance).any() ?: return@after
+                    }.get(instance).any() ?: return@before
                     val context = ams.current().field {
                         name = "mContext";superClass()
-                    }.cast<Context>() ?: return@after
-                    val intentIndex = args.indexOfFirst { it is Intent }.takeIf { it != -1 }
-                        ?: return@after
+                    }.cast<Context>() ?: return@before
+                    val broadcastRecord = args().first().any() ?: return@before
+                    val intent = broadcastRecord.current().field { name = "intent" }
+                        .cast<Intent>() ?: return@before
                     val resolveIndex = args.indexOfFirst { it is ResolveInfo }.takeIf { it != -1 }
-                        ?: return@after
-                    val intent = args(intentIndex).cast<Intent>() ?: return@after
-                    val resolveInfo = args(resolveIndex).cast<ResolveInfo>() ?: return@after
+                        ?: return@before
+                    val resolveInfo = args(resolveIndex).cast<ResolveInfo>() ?: return@before
                     val packName = resolveInfo.activityInfo.applicationInfo.packageName
                     if (isFCMIntent(intent) && isAllowPackage(allowList, packName)) {
                         context.sendGsmLogBroadcast("[$packName] Allow Start From BroadCast")
-                        resultTrue()
+                        resultFalse()
                     }
                 }
             }
