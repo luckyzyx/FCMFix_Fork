@@ -13,7 +13,7 @@ plugins {
 }
 
 android {
-    compileSdk = 35
+    compileSdk = 36
     namespace = "com.luckyzyx.fcmfix"
 
     defaultConfig {
@@ -80,8 +80,9 @@ dependencies {
     implementation(fileTree("libs"))
 
     compileOnly(libs.xposed.api)
-    if (isBuildCI) implementation(libs.yukihookapi)
-    else implementation(libs.yukihookapi.local)
+    implementation(libs.yukihookapi)
+    implementation(libs.kavaref.core)
+    implementation(libs.kavaref.extension)
 
     ksp(libs.ksp.yukihookapi)
     implementation(libs.dexkit)
