@@ -4,10 +4,8 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.widget.Button
 import android.widget.LinearLayout
+import com.highcapable.kavaref.KavaRef.Companion.resolve
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
-import com.highcapable.yukihookapi.hook.factory.field
-import com.highcapable.yukihookapi.hook.factory.method
-import com.highcapable.yukihookapi.hook.type.android.ButtonClass
 import com.luckyzyx.fcmfix.BuildConfig
 import com.luckyzyx.fcmfix.hook.HookUtils.sendGsmLogBroadcast
 
@@ -15,10 +13,10 @@ object AddButton : YukiBaseHooker() {
     @SuppressLint("SetTextI18n")
     override fun onHook() {
         //Source GcmChimeraDiagnostics
-        "com.google.android.gms.gcm.GcmChimeraDiagnostics".toClass().apply {
-            method { name = "onCreate" }.hook {
+        "com.google.android.gms.gcm.GcmChimeraDiagnostics".toClass().resolve().apply {
+            firstMethod { name = "onCreate" }.hook {
                 after {
-                    val button = field { type = ButtonClass }.get(instance).cast<Button>()
+                    val button = firstField { type = Button::class }.of(instance).get<Button>()
                         ?: return@after
                     val linear = button.parent as LinearLayout
                     val context = button.context

@@ -4,11 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ResolveInfo
 import android.util.ArraySet
+import com.highcapable.kavaref.KavaRef.Companion.asResolver
+import com.highcapable.kavaref.KavaRef.Companion.resolve
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
-import com.highcapable.yukihookapi.hook.factory.current
-import com.highcapable.yukihookapi.hook.factory.field
-import com.highcapable.yukihookapi.hook.factory.method
-import com.highcapable.yukihookapi.hook.type.java.BooleanType
 import com.luckyzyx.fcmfix.hook.HookUtils.isAllowPackage
 import com.luckyzyx.fcmfix.hook.HookUtils.isFCMIntent
 import com.luckyzyx.fcmfix.hook.HookUtils.sendGsmLogBroadcast
@@ -29,19 +27,22 @@ object AutoStartFix : YukiBaseHooker() {
         }
 
         //Source OplusAppStartupManager
-        "com.android.server.am.OplusAppStartupManager".toClassOrNull()?.apply {
-            method { name = "shouldPreventSendReceiverReal";returnType = BooleanType }.hookAll {
+        "com.android.server.am.OplusAppStartupManager".toClassOrNull()?.resolve()?.apply {
+            method {
+                name = "shouldPreventSendReceiverReal"
+                returnType = Boolean::class
+            }.hookAll {
                 before {
                     if (!isBootComplete) return@before
-                    val ams = field {
+                    val ams = firstField {
                         type = "com.android.server.am.ActivityManagerService"
-                    }.get(instance).any() ?: return@before
-                    val context = ams.current().field {
-                        name = "mContext";superClass()
-                    }.cast<Context>() ?: return@before
+                    }.of(instance).get() ?: return@before
+                    val context = ams.asResolver().firstField {
+                        name = "mContext";superclass()
+                    }.get<Context>() ?: return@before
                     val broadcastRecord = args().first().any() ?: return@before
-                    val intent = broadcastRecord.current().field { name = "intent" }
-                        .cast<Intent>() ?: return@before
+                    val intent = broadcastRecord.asResolver().firstField { name = "intent" }
+                        .get<Intent>() ?: return@before
                     val resolveIndex = args.indexOfFirst { it is ResolveInfo }.takeIf { it != -1 }
                         ?: return@before
                     val resolveInfo = args(resolveIndex).cast<ResolveInfo>() ?: return@before

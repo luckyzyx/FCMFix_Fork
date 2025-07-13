@@ -7,11 +7,10 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import com.highcapable.kavaref.KavaRef.Companion.resolve
+import com.highcapable.kavaref.extension.ArrayClass
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
-import com.highcapable.yukihookapi.hook.factory.method
 import com.highcapable.yukihookapi.hook.log.YLog
-import com.highcapable.yukihookapi.hook.type.java.AnyArrayClass
-import com.highcapable.yukihookapi.hook.type.java.StringClass
 import com.luckyzyx.fcmfix.BuildConfig
 
 object RegisterLogReceiver : YukiBaseHooker() {
@@ -20,14 +19,16 @@ object RegisterLogReceiver : YukiBaseHooker() {
     override fun onHook() {
         //Source GcmChimeraService
         val gcmService = "com.google.android.gms.gcm.GcmChimeraService".toClass()
-        val gcmSendLogMethod = gcmService.method { param(StringClass, AnyArrayClass) }
+        val gcmSendLogMethod = gcmService.resolve().firstMethod {
+            parameters(String::class, ArrayClass(Any::class))
+        }
 
         val logBroadcastReceive: BroadcastReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 if (intent.action == "${BuildConfig.APPLICATION_ID}.log") {
                     val text = intent.getStringExtra("text")
                     try {
-                        gcmSendLogMethod.get().call("[FCMFix] $text", null)
+                        gcmSendLogMethod.invoke("[FCMFix] $text", null)
                     } catch (e: Throwable) {
                         YLog.debug("FCM LOG Print Error -> $text", e)
                     }
@@ -35,8 +36,8 @@ object RegisterLogReceiver : YukiBaseHooker() {
             }
         }
 
-        gcmService.apply {
-            method { name = "onCreate" }.hook {
+        gcmService.resolve().apply {
+            firstMethod { name = "onCreate" }.hook {
                 after {
                     val context = instance<ContextWrapper>()
                     val intentFilter = IntentFilter()
@@ -50,7 +51,7 @@ object RegisterLogReceiver : YukiBaseHooker() {
                     }
                 }
             }
-            method { name = "onDestroy" }.hook {
+            firstMethod { name = "onDestroy" }.hook {
                 before {
                     val context = instance<ContextWrapper>()
                     context.unregisterReceiver(logBroadcastReceive)

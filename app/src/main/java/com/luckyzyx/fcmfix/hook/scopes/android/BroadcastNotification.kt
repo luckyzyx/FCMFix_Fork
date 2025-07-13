@@ -6,12 +6,10 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.util.ArraySet
+import com.highcapable.kavaref.KavaRef.Companion.asResolver
+import com.highcapable.kavaref.KavaRef.Companion.resolve
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
-import com.highcapable.yukihookapi.hook.factory.current
-import com.highcapable.yukihookapi.hook.factory.field
-import com.highcapable.yukihookapi.hook.factory.method
 import com.highcapable.yukihookapi.hook.log.YLog
-import com.highcapable.yukihookapi.hook.type.android.ContextClass
 import com.luckyzyx.fcmfix.hook.HookUtils.createFcmfixChannel
 import com.luckyzyx.fcmfix.hook.HookUtils.getAppIcon
 import com.luckyzyx.fcmfix.hook.HookUtils.isAllowPackage
@@ -35,20 +33,24 @@ object BroadcastNotification : YukiBaseHooker() {
         }
 
         //Source BroadcastQueueModernImpl
-        "com.android.server.am.BroadcastQueueModernImpl".toClass().apply {
-            method { name = "scheduleResultTo" }.hook {
+        "com.android.server.am.BroadcastQueueModernImpl".toClass().resolve().apply {
+            firstMethod { name = "scheduleResultTo" }.hook {
                 before {
                     if (!isBootComplete) return@before
-                    val ams = field {
-                        type = "com.android.server.am.ActivityManagerService";superClass()
-                    }.get(instance).any() ?: return@before
-                    val context = ams.current().field { type = ContextClass }.cast<Context>()
-                        ?: return@before
+                    val ams = firstField {
+                        type = "com.android.server.am.ActivityManagerService";superclass()
+                    }.of(instance).get() ?: return@before
+                    val context =
+                        ams.asResolver().firstField { type = Context::class }.get<Context>()
+                            ?: return@before
                     val pm = context.packageManager
                     val broadcastRecord = args().first().any() ?: return@before
-                    val intent = broadcastRecord.current().field { name = "intent" }
-                        .cast<Intent>() ?: return@before
-                    val resultCode = broadcastRecord.current().field { name = "resultCode" }.int()
+                    val intent =
+                        broadcastRecord.asResolver().firstField { name = "intent" }.get<Intent>()
+                            ?: return@before
+                    val resultCode =
+                        broadcastRecord.asResolver().firstField { name = "resultCode" }.get<Int>()
+                            ?: return@before
                     val packName = intent.`package` ?: return@before
                     if (noRN && resultCode != -1 && isAllowPackage(allowList, packName)) {
                         try {
@@ -56,7 +58,9 @@ object BroadcastNotification : YukiBaseHooker() {
                             if (notifyIntent != null) {
                                 notifyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 val pendingIntent = PendingIntent.getActivity(
-                                    context, 0, notifyIntent,
+                                    context,
+                                    0,
+                                    notifyIntent,
                                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                                 )
                                 val appName = safeOf("") {

@@ -3,15 +3,13 @@ package com.luckyzyx.fcmfix.hook.scopes.android
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
 import android.util.ArraySet
+import com.highcapable.kavaref.KavaRef.Companion.resolve
+import com.highcapable.kavaref.extension.ArrayClass
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.factory.field
-import com.highcapable.yukihookapi.hook.factory.method
 import com.highcapable.yukihookapi.hook.log.YLog
-import com.highcapable.yukihookapi.hook.type.android.BundleClass
-import com.highcapable.yukihookapi.hook.type.android.IntentClass
-import com.highcapable.yukihookapi.hook.type.java.IntType
-import com.highcapable.yukihookapi.hook.type.java.StringArrayClass
 import com.luckyzyx.fcmfix.hook.HookUtils.isAllowPackage
 import com.luckyzyx.fcmfix.hook.HookUtils.isFCMIntent
 import com.luckyzyx.fcmfix.hook.HookUtils.sendGsmLogBroadcast
@@ -37,17 +35,18 @@ object BroadcastFix : YukiBaseHooker() {
 
         //Source ActivityManagerService
         val clazz = "com.android.server.am.ActivityManagerService".toClassOrNull() ?: return
-        val findMethods = clazz.method {
-            name = "broadcastIntentLocked";returnType = IntType
-        }.giveAll()
-        val maxParamCount = findMethods.maxByOrNull { it.parameterCount }?.parameterCount
-        val finalMethod = findMethods.find { it.parameterCount == maxParamCount } ?: return
-        val paramTypes = finalMethod.parameterTypes
-        val intentArgsIndex = paramTypes.indexOfFirst { it == IntentClass }
+        val findMethods = clazz.resolve().method {
+            name = "broadcastIntentLocked";returnType = Int::class
+        }
+        val maxParamCount = findMethods.maxByOrNull { it.self.parameterCount }?.self?.parameterCount
+        val finalMethod = findMethods.find { it.self.parameterCount == maxParamCount } ?: return
+        val paramTypes = finalMethod.self.parameterTypes
+        val intentArgsIndex = paramTypes.indexOfFirst { it == Intent::class.java }
         val appOpArgsIndex = paramTypes.withIndex().find { (index, paramType) ->
-            paramType == IntType && (index > 0 && paramTypes[index - 1] == StringArrayClass)
-                    && (index < paramTypes.size - 1 && paramTypes[index + 1] == BundleClass)
-        }?.index ?: paramTypes.indexOfFirst { it == IntType }
+            paramType == Int::class.java
+                    && (index > 0 && paramTypes[index - 1] == ArrayClass(String::class.java))
+                    && (index < paramTypes.size - 1 && paramTypes[index + 1] == Bundle::class.java)
+        }?.index ?: paramTypes.indexOfFirst { it == Int::class.java }
         YLog.debug("Android API: " + Build.VERSION.SDK_INT)
         YLog.debug("intentArgsIndex: $intentArgsIndex")
         YLog.debug("appOpArgsIndex: $appOpArgsIndex")
@@ -57,11 +56,11 @@ object BroadcastFix : YukiBaseHooker() {
             return
         }
 
-        clazz.apply {
+        clazz.resolve().apply {
             finalMethod.hook {
                 before {
                     if (!isBootComplete) return@before
-                    val context = field { name = "mContext" }.get(instance).cast<Context>()
+                    val context = firstField { name = "mContext" }.of(instance).get<Context>()
                         ?: return@before
                     val intent = args(intentArgsIndex).cast<Intent>() ?: return@before
                     val appop = args(appOpArgsIndex).cast<Int>() ?: return@before
