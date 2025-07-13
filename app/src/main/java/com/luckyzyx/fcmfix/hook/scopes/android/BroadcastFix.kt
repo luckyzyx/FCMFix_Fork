@@ -4,12 +4,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.os.WorkSource
 import android.util.ArraySet
+import com.highcapable.kavaref.KavaRef.Companion.asResolver
 import com.highcapable.kavaref.KavaRef.Companion.resolve
 import com.highcapable.kavaref.extension.ArrayClass
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
-import com.highcapable.yukihookapi.hook.factory.field
 import com.highcapable.yukihookapi.hook.log.YLog
+import com.luckyzyx.fcmfix.hook.HookUtils.getPackageUid
 import com.luckyzyx.fcmfix.hook.HookUtils.isAllowPackage
 import com.luckyzyx.fcmfix.hook.HookUtils.isFCMIntent
 import com.luckyzyx.fcmfix.hook.HookUtils.sendGsmLogBroadcast
@@ -20,6 +22,7 @@ object BroadcastFix : YukiBaseHooker() {
 
     var callback: ((key: String, value: Any) -> Unit)? = null
     var isBootComplete = false
+    var oplusWakeLock: Any? = null
 
     override fun onHook() {
         var allowList = prefs("config").getStringSet("allowList", ArraySet())
@@ -56,6 +59,15 @@ object BroadcastFix : YukiBaseHooker() {
             return
         }
 
+        //Source OplusProxyWakeLock
+        "com.android.server.power.OplusProxyWakeLock".toClass().resolve().apply {
+            firstConstructor().hook {
+                after {
+                    if (oplusWakeLock == null) oplusWakeLock = instance
+                }
+            }
+        }
+
         clazz.resolve().apply {
             finalMethod.hook {
                 before {
@@ -66,6 +78,7 @@ object BroadcastFix : YukiBaseHooker() {
                     val appop = args(appOpArgsIndex).cast<Int>() ?: return@before
                     val packName = (intent.component?.packageName ?: intent.getPackage())
                         ?: return@before
+                    // 介入条件：Intent未包含唤醒停止的pkg 且 Intent是FCM
                     if ((intent.flags and Intent.FLAG_INCLUDE_STOPPED_PACKAGES) == 0
                         && isFCMIntent(intent)
                     ) {
@@ -110,6 +123,18 @@ object BroadcastFix : YukiBaseHooker() {
                                 context.sendGsmLogBroadcast(
                                     "[$packName] Send Forced Start Broadcast"
                                 )
+                            }
+
+                            if (oplusWakeLock != null) {
+                                val uid = getPackageUid(context, packName)
+                                if (uid >= 0) {
+                                    val ws = WorkSource()
+                                    oplusWakeLock!!.asResolver().firstMethod {
+                                        name = "unfreezeIfNeed"
+                                        parameters(Int::class, WorkSource::class, String::class)
+                                    }.invoke(uid, ws, "FCMFX")
+                                    YLog.debug("unfreezeIfNeed: $packName")
+                                }
                             }
                         }
                     }

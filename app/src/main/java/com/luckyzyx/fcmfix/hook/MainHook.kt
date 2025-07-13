@@ -19,6 +19,7 @@ import com.luckyzyx.fcmfix.hook.scopes.android.AutoStartFix
 import com.luckyzyx.fcmfix.hook.scopes.android.BroadcastFix
 import com.luckyzyx.fcmfix.hook.scopes.android.BroadcastNotification
 import com.luckyzyx.fcmfix.hook.scopes.android.KeepNotification
+import com.luckyzyx.fcmfix.hook.scopes.android.OplusProxyFix
 import com.luckyzyx.fcmfix.hook.scopes.gms.AddButton
 import com.luckyzyx.fcmfix.hook.scopes.gms.Heartbeat
 import com.luckyzyx.fcmfix.hook.scopes.gms.RegisterLogReceiver
@@ -58,14 +59,14 @@ object MainHook : IYukiHookXposedInit {
             loadHooker(AutoStartFix)
             loadHooker(KeepNotification)
             loadHooker(BroadcastNotification)
+            loadHooker(OplusProxyFix)
 
             bootCompleteCallback = {
                 BroadcastFix.isBootComplete = true
                 AutoStartFix.isBootComplete = true
                 KeepNotification.isBootComplete = true
                 BroadcastNotification.isBootComplete = true
-
-                YLog.debug("System is BootComplete")
+                OplusProxyFix.isBootComplete = true
             }
 
             sysyemCallback = {
@@ -76,6 +77,7 @@ object MainHook : IYukiHookXposedInit {
                         AutoStartFix.callback?.invoke("allowList", allowList)
                         KeepNotification.callback?.invoke("allowList", allowList)
                         BroadcastNotification.callback?.invoke("allowList", allowList)
+                        OplusProxyFix.callback?.invoke("allowList", allowList)
                     }
 
                     "disableAutoCleanNotification" -> {

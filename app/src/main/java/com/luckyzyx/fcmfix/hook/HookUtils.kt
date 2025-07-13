@@ -28,6 +28,15 @@ object HookUtils {
         }
     }
 
+    fun getPackageUid(context: Context, packageName: String): Int {
+        return try {
+            val pm: PackageManager = context.packageManager
+            return pm.getPackageUid(packageName, 0)
+        } catch (e: PackageManager.NameNotFoundException) {
+            -1
+        }
+    }
+
     fun getAppIcon(context: Context, packageName: String): Bitmap? {
         try {
             val drawable = context.packageManager.getApplicationIcon(packageName)
@@ -55,11 +64,15 @@ object HookUtils {
         }
     }
 
-    fun isFCMIntent(intent: Intent): Boolean {
-        val action = intent.action
+    fun isFCMAction(action: String?): Boolean {
         return action != null && (action.endsWith(".android.c2dm.intent.RECEIVE") ||
                 "com.google.firebase.MESSAGING_EVENT" == action ||
                 "com.google.firebase.INSTANCE_ID_EVENT" == action)
+    }
+
+    fun isFCMIntent(intent: Intent): Boolean {
+        val action = intent.action
+        return isFCMAction(action)
     }
 
     fun fileIsExists(strFile: String): Boolean {
