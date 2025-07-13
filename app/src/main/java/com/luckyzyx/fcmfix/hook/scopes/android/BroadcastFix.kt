@@ -65,9 +65,11 @@ object BroadcastFix : YukiBaseHooker() {
                         ?: return@before
                     val intent = args(intentArgsIndex).cast<Intent>() ?: return@before
                     val appop = args(appOpArgsIndex).cast<Int>() ?: return@before
-                    val packName =
-                        intent.component?.packageName ?: intent.`package` ?: return@before
-                    if (isFCMIntent(intent) && intent.flags != Intent.FLAG_INCLUDE_STOPPED_PACKAGES) {
+                    val packName = (intent.component?.packageName ?: intent.getPackage())
+                        ?: return@before
+                    if ((intent.flags and Intent.FLAG_INCLUDE_STOPPED_PACKAGES) == 0
+                        && isFCMIntent(intent)
+                    ) {
                         if (isAllowPackage(allowList, packName)) {
                             if (appop == -1) args(appOpArgsIndex).set(11)
                             intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
