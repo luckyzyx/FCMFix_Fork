@@ -31,11 +31,11 @@ public class BroadcastFix extends XposedModule {
         }catch (Throwable e) {
             printLog("hook error broadcastIntentLocked:" + e.getMessage());
         }
-        try{
-            this.startHookScheduleResultTo();
-        }catch (Throwable e) {
-            printLog("hook error com.android.server.am.BroadcastQueueModernImpl.scheduleResultTo:" + e.getMessage());
-        }
+//        try{
+//            this.startHookScheduleResultTo();
+//        }catch (Throwable e) {
+//            printLog("hook error com.android.server.am.BroadcastQueueModernImpl.scheduleResultTo:" + e.getMessage());
+//        }
     }
 
     protected void startHookBroadcastIntentLocked(){

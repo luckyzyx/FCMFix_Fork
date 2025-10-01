@@ -293,7 +293,7 @@ public class MainActivity extends AppCompatActivity {
 
         menu.add("允许唤醒被冰箱冻结的应用").setCheckable(true);
 
-        menu.add("目标无响应时代发提示通知").setCheckable(true);
+//        menu.add("目标无响应时代发提示通知").setCheckable(true);
 
         menu.add("全选包含 FCM 的应用");
 
