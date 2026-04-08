@@ -5,17 +5,18 @@ import android.os.WorkSource;
 
 import com.kooritea.fcmfix.util.XposedUtils;
 
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XC_MethodReplacement;
-import de.robv.android.xposed.XposedHelpers;
-import de.robv.android.xposed.callbacks.XC_LoadPackage;
+import com.kooritea.fcmfix.libxposed.XC_MethodHook;
+import com.kooritea.fcmfix.libxposed.XC_MethodReplacement;
+import com.kooritea.fcmfix.libxposed.XposedHelpers;
 
 public class OplusProxyFix extends XposedModule {
 
     private static Object s_oplusProxyWakeLock = null;
+    private static volatile boolean s_useFourParams = false;
+    private static volatile boolean s_signatureDetected = false;
 
-    public OplusProxyFix(XC_LoadPackage.LoadPackageParam loadPackageParam) {
-        super(loadPackageParam);
+    public OplusProxyFix(ClassLoader classLoader) {
+        super(classLoader);
         try{
             this.startHookOplusProxyWakeLock();
             this.startHookOplusProxyBroadcast();
@@ -47,8 +48,8 @@ public class OplusProxyFix extends XposedModule {
     }
 
     private void startHookOplusProxyBroadcast() throws Exception {
-        Class<?> oplusProxyBroadcastClass = XposedHelpers.findClass("com.android.server.am.OplusProxyBroadcast", loadPackageParam.classLoader);
-        Class<?> resultEnum = XposedHelpers.findClass("com.android.server.am.OplusProxyBroadcast$RESULT", loadPackageParam.classLoader);
+        Class<?> oplusProxyBroadcastClass = XposedHelpers.findClass("com.android.server.am.OplusProxyBroadcast", classLoader);
+        Class<?> resultEnum = XposedHelpers.findClass("com.android.server.am.OplusProxyBroadcast$RESULT", classLoader);
         Object notIncludeValue = XposedHelpers.getStaticObjectField(resultEnum, "NOT_INCLUDE");
         Object proxyValue = XposedHelpers.getStaticObjectField(resultEnum, "PROXY");
 
@@ -81,7 +82,7 @@ public class OplusProxyFix extends XposedModule {
     }
 
     private void startHookOplusProxyWakeLock() throws Exception {
-        Class<?> oplusWakelockClass = XposedHelpers.findClass("com.android.server.power.OplusProxyWakeLock", loadPackageParam.classLoader);
+        Class<?> oplusWakelockClass = XposedHelpers.findClass("com.android.server.power.OplusProxyWakeLock", classLoader);
 
         XposedUtils.findAndHookConstructorAnyParam(oplusWakelockClass, new XC_MethodHook() {
             @Override
@@ -128,25 +129,49 @@ public class OplusProxyFix extends XposedModule {
             02 String tag
          */
 
-        printLog("unfreeze " + target + ", uid=" + uid);
         WorkSource ws = new WorkSource();
-        XposedHelpers.callMethod(s_oplusProxyWakeLock, "unfreezeIfNeed", uid, ws, "FCMXX"); // 5 chars tag
+        String tag = "FCMXX";
+
+        if (!s_signatureDetected) {
+            try {
+                XposedHelpers.callMethod(s_oplusProxyWakeLock, "unfreezeIfNeed", uid, ws, tag, "FCMFix");
+                s_useFourParams = true;
+            } catch (Throwable e) {
+                // 降级用3参
+                XposedHelpers.callMethod(s_oplusProxyWakeLock, "unfreezeIfNeed", uid, ws, tag);
+                s_useFourParams = false;
+            }
+            s_signatureDetected = true;
+        } else {
+            // 后续调用直接用缓存的
+            try {
+                if (s_useFourParams) {
+                    XposedHelpers.callMethod(s_oplusProxyWakeLock, "unfreezeIfNeed", uid, ws, tag, "FCMFix");
+                    printLog("unfreeze " + target + ", uid=" + uid);
+                } else {
+                    XposedHelpers.callMethod(s_oplusProxyWakeLock, "unfreezeIfNeed", uid, ws, tag);
+                    printLog("unfreeze " + target + ", uid=" + uid);
+                }
+            } catch (Throwable ignored) {
+                // 静默或log
+            }
+        }
     }
 
     private void startHookRegisterGmsRestrictObserver() {
-        XposedHelpers.findAndHookMethod("com.android.server.hans.scene.OplusBgSceneManager", loadPackageParam.classLoader, "registerGmsRestrictObserver", XC_MethodReplacement.DO_NOTHING);
+        XposedHelpers.findAndHookMethod("com.android.server.hans.scene.OplusBgSceneManager", classLoader, "registerGmsRestrictObserver", XC_MethodReplacement.DO_NOTHING);
     }
 
     private void startHookUpdateGmsRestrict() {
-        XposedHelpers.findAndHookMethod("com.android.server.hans.scene.OplusBgSceneManager", loadPackageParam.classLoader, "updateGmsRestrict", XC_MethodReplacement.DO_NOTHING);
+        XposedHelpers.findAndHookMethod("com.android.server.hans.scene.OplusBgSceneManager", classLoader, "updateGmsRestrict", XC_MethodReplacement.DO_NOTHING);
     }
 
     private void startHookIsGoogleRestricInfoOn() {
-        XposedHelpers.findAndHookMethod("com.android.server.am.OplusAppStartupManager$OplusStartupStrategy", loadPackageParam.classLoader, "isGoogleRestricInfoOn", int.class, XC_MethodReplacement.returnConstant(false));
+        XposedHelpers.findAndHookMethod("com.android.server.am.OplusAppStartupManager$OplusStartupStrategy", classLoader, "isGoogleRestricInfoOn", int.class, XC_MethodReplacement.returnConstant(false));
     }
 
     private void startHookIsGmsApp() {
-        XposedHelpers.findAndHookMethod("com.android.server.hans.OplusHansDBConfig", loadPackageParam.classLoader, "isGmsApp", int.class, XC_MethodReplacement.returnConstant(false));
+        XposedHelpers.findAndHookMethod("com.android.server.hans.OplusHansDBConfig", classLoader, "isGmsApp", int.class, XC_MethodReplacement.returnConstant(false));
     }
 
 }
